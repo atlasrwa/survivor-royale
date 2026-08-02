@@ -53,6 +53,12 @@
     "node_modules",
     "dist",
     "build",
-    ".next"
+    ".next",
+    "llama.cpp",
+    "hardhat.config.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.ts",
+    "jest.config.ts",
+    "jest.setup.ts"
   ]
 }

@@ -4,12 +4,18 @@ const nextConfig = {
   swcMinify: true,
   
   // Webpack configuration for Phaser
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       // Phaser aliasing for better imports
       phaser: 'phaser/dist/phaser.js',
     };
+
+    // Prevent Phaser from being bundled server-side
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'phaser'];
+    }
+
     return config;
   },
   
