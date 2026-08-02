@@ -10,7 +10,7 @@
 - **Genre:** Top-down action game (45° perspective hint)
 - **Style:** Clean pixel art, 16-bit era aesthetic
 - **Mood:** Dark fantasy arena — glowing effects, magical particles, dramatic lighting
-- **Inspiration characteristics:** Hades color vibrancy, Enter the Gungeon readability, Vampire Survivors density
+- **Visual identity:** High-contrast dark backgrounds with vibrant saturated gameplay entities. Premium modern pixel art with sophisticated shading. See VISUAL_REFERENCES.md for detailed characteristics.
 
 ---
 
@@ -295,3 +295,194 @@ projectile_ice, projectile_lightning, projectile_enemy, projectile_boss
 particle, xp_orb
 arena_tile
 ```
+
+---
+
+## Visual Hierarchy
+
+Players notice elements in this exact order. Design brightness, size, and saturation to enforce this hierarchy:
+
+```
+1. HERO (brightest, largest player entity, most saturated)
+   ↓
+2. ACTIVE ABILITIES (screen-filling effects, white/bright cores)
+   ↓
+3. BOSS (largest entity on screen, high internal contrast)
+   ↓
+4. ELITE ENEMIES (pulsing modifier glow distinguishes from normal)
+   ↓
+5. NORMAL ENEMIES (warm colors, mid-saturation)
+   ↓
+6. PROJECTILES (small but high contrast, motion communicates)
+   ↓
+7. XP ORBS (cool blue, attractive but non-threatening)
+   ↓
+8. ENVIRONMENT (darkest, least saturated, never noticed consciously)
+   ↓
+9. DECORATIONS (essentially invisible during gameplay)
+```
+
+### Enforcement Rules
+- Each level must be 15-20% less visually prominent than the one above
+- If a lower-tier element draws attention before a higher-tier element, it's too bright
+- Test: screenshot the game at peak combat — can you instantly find the hero?
+
+---
+
+## Shape Language
+
+Every entity category uses a consistent shape vocabulary. This ensures instant recognition.
+
+### Heroes
+- **Broad** — wide shoulders, grounded stance, stable geometry
+- **Iconic** — weapon defines silhouette (remove weapon = unrecognizable)
+- **Readable** — 2-3 major shapes maximum (body + weapon + one feature)
+- **Symmetrical base** — heroes feel balanced, stable, trustworthy
+- Underlying shapes: **rounded rectangles, circles, stable triangles**
+
+### Enemies — Regular
+- **Dangerous** — angular, aggressive, forward-leaning
+- **Asymmetric** — less stable than heroes, more chaotic
+- **Simple** — ONE defining shape per enemy type
+- **Expendable** — small, numerous, individually unimportant
+- Shape assignments:
+  - Walker: circle (basic, soft threat)
+  - Runner: elongated oval (speed)
+  - Tank: square/rectangle (heavy, immovable)
+  - Ranged: triangle (directional, pointing)
+  - Exploder: diamond (unstable, volatile)
+  - Flyer: wide horizontal (wings, airborne)
+  - Splitter: oval with seam (will divide)
+  - Shielder: circle + front arc (protected)
+  - Healer: soft circle + aura (support, non-combat)
+
+### Enemies — Bosses
+- **Oversized** — 2-3× larger than regular enemies
+- **Intimidating** — complex silhouette, multiple threatening features
+- **Asymmetric and heavy** — visual weight communicates danger
+- **Evolving** — shape/appearance changes between phases
+- Boss body structure: large central mass + extending threat elements (arms, heads, tendrils)
+
+### Projectiles
+- **Immediately recognizable** — shape implies type (circle=fire, crystal=ice, bolt=lightning)
+- **Directional** — elongated in travel direction
+- **Small but visible** — maximum 20×20px, high contrast core
+- Player projectiles: bright, warm glow cores
+- Enemy projectiles: dark cores with colored edge (inverse of player)
+
+### UI Elements
+- **Geometric** — circles, rounded rectangles, clean lines
+- **Simple** — one concept per icon (sword=damage, shield=defense, boot=speed)
+- **Consistent proportions** — all icons same weight/density
+- **No organic shapes** in UI (organic = gameplay, geometric = interface)
+
+---
+
+## Material Library
+
+Consistent rendering of materials across all entities. When an asset has steel, it looks like THIS steel. Always.
+
+### Steel (Knight armor, shields, weapons)
+- **Base:** Mid-blue metallic (`#4488ff` family)
+- **Highlight:** Bright cool white-blue, top-left edge (`#aaccff`)
+- **Shadow:** Deep navy-blue (`#2266cc`)
+- **Glow rule:** Only if enchanted — faint `#88ccff` edge emission
+- **Texture:** Large flat planes. No rivets. No detail patterns. Clean plates separated by dark gaps.
+
+### Stone (Golems, Tank enemies, arena floor)
+- **Base:** Dark desaturated warm (`#553333` for enemies, `#111122` for arena)
+- **Highlight:** Slightly lighter same hue, minimal (`#665544`)
+- **Shadow:** Near-black warm (`#221111`)
+- **Glow rule:** Only if cracked/molten — glow seeps from cracks
+- **Texture:** Monolithic. Blocky. Minimal surface detail. Weight implied through size.
+
+### Magic / Energy (Abilities, glows, orbs)
+- **Base:** Saturated element color (varies by element)
+- **Highlight:** White core (always `#ffffff` at hottest point)
+- **Shadow:** N/A — magic is self-lit, casts no shadow
+- **Glow rule:** Always glowing. Core → bright color → medium color → transparent
+- **Texture:** Smooth gradient feel (pixel-stepped, not actual gradient). No hard edges within the glow.
+
+### Wood (Bow, staff handles, arrows)
+- **Base:** Warm brown (`#664422`)
+- **Highlight:** Light brown-gold, top-left surface (`#aa8844`)
+- **Shadow:** Dark brown (`#332211`)
+- **Glow rule:** Never glows (wood is mundane)
+- **Texture:** 1-2 pixel grain lines along length. Minimal.
+
+### Leather (Archer armor, straps, boots)
+- **Base:** Medium brown or dark green (`#335533` for Archer)
+- **Highlight:** Subtle, minimal — leather doesn't reflect much (`#447744`)
+- **Shadow:** Deep fold shadow (`#223322`)
+- **Glow rule:** Never glows
+- **Texture:** Smooth. No texture detail at this pixel scale. Reads through color only.
+
+### Energy — Fire
+- **Base:** Orange (`#ff6600`)
+- **Highlight:** Yellow-white core (`#ffcc00` → `#ffffff`)
+- **Shadow:** N/A — fire is emissive
+- **Glow rule:** Always emissive. White hot center, orange edge, red trail
+- **Texture:** Flickering, irregular edges. Changes shape between frames. Never static.
+
+### Energy — Ice
+- **Base:** Medium blue (`#44aaff`)
+- **Highlight:** White crystal facets (`#ffffff` at angles)
+- **Shadow:** Deep blue (`#2266aa`)
+- **Glow rule:** Subtle cold glow. Less intense than fire.
+- **Texture:** Angular, faceted, crystalline. Hard edges. Sharp points.
+
+### Energy — Lightning
+- **Base:** Bright yellow (`#ffee44`)
+- **Highlight:** White-hot core (`#ffffff`)
+- **Shadow:** N/A — lightning is emissive
+- **Glow rule:** Maximum glow intensity. Brightest element in game.
+- **Texture:** Jagged, zig-zag, irregular. Never smooth. Sparks scatter.
+
+### Poison / Nature
+- **Base:** Bright green (`#44ff88`)
+- **Highlight:** Yellow-green (`#aaffcc`)
+- **Shadow:** Dark forest (`#227744`)
+- **Glow rule:** Soft organic glow. Pulsing rather than static.
+- **Texture:** Organic, blobby, flowing. Drips. Bubbles.
+
+### Darkness / Necrotic
+- **Base:** Deep violet (`#6622aa`)
+- **Highlight:** Light purple at edges (`#aa44dd`)
+- **Shadow:** Near-black purple (`#220044`)
+- **Glow rule:** Inverse glow — dark core, lighter edge. Absorbs light.
+- **Texture:** Wispy, swirling, ethereal. Smoke-like. Tendrils.
+
+### Gold / Legendary
+- **Base:** Rich gold (`#ffcc44`)
+- **Highlight:** White-gold (`#ffeebb`)
+- **Shadow:** Dark amber (`#aa8822`)
+- **Glow rule:** Warm radiant glow. Used for legendary/evolved items.
+- **Texture:** Smooth metallic. Large highlight areas. Premium feel.
+
+---
+
+## Scalability Design Principles
+
+This art pipeline is designed to scale to:
+- 100+ heroes (follow existing hero template structure)
+- 300+ enemies (follow existing enemy template structure)
+- 500+ cosmetics (same base skeleton, swap colors/accessories)
+- 200+ weapons (follow projectile template)
+- Seasonal skins (palette swap + 1-2 accessory changes)
+- Biome variants (new tile + border + 2 props per biome)
+
+### How to Add a New Entity
+1. Duplicate the closest existing spec file section
+2. Change: name, colors, shape, animations
+3. Keep: all rendering rules, perspective, lighting, format specs
+4. Reference STYLE_GUIDE.md (never duplicate its rules in entity files)
+5. Add prompt to PROMPTS.md (both Production and Standalone versions)
+6. Run through ASSET_REVIEW.md pipeline
+
+### What Never Changes
+- Camera angle (top-down 45°)
+- Light direction (top-left 45°)
+- Pixel rendering rules (no AA, hard edges)
+- File format conventions (horizontal strip PNG)
+- Color maximums per sprite tier
+- Animation frame rates (8/12/6 fps)

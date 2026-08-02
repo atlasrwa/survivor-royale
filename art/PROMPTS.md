@@ -1,24 +1,46 @@
 # PROMPTS.md — Complete AI Prompt Library
 
-> Every prompt below is self-contained and production-ready.
-> Copy any prompt directly into Sora or other AI image models.
-> Each prompt already includes style reference from STYLE_GUIDE.md.
+> Two prompt versions per asset:
+> - **Production Prompt** — Short, fast iteration, references STYLE_GUIDE.md
+> - **Standalone Prompt** — Full self-contained prompt with all rules inline
+>
+> Use Production Prompts for iterative generation (lower token usage, better consistency).
+> Use Standalone Prompts when the AI model cannot access STYLE_GUIDE.md directly.
 
 ---
 
 ## How To Use
 
-1. Copy the prompt for the asset you need.
-2. Paste into Sora / AI image generator.
-3. Verify output against the corresponding spec file (HERO_KNIGHT.md, ENEMIES.md, etc.).
-4. Check against STYLE_GUIDE.md negative prompt list.
-5. Export as PNG with transparency.
+### Fast Iteration (Production Prompts)
+1. Feed STYLE_GUIDE.md as context/system prompt
+2. Copy the short Production Prompt
+3. Generate → Review → Regenerate if needed
+
+### One-Shot Generation (Standalone Prompts)
+1. Copy the full Standalone Prompt (includes all rules inline)
+2. Paste directly into Sora / AI image generator
+3. Verify against CONSISTENCY_CHECKLIST.md
 
 ---
 
 ## HEROES
 
+---
+
 ### Knight — Idle (4 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Knight Idle
+64x64, 4 frames, horizontal strip, transparent background.
+Blue armored holy knight. Full plate armor. Glowing blue broadsword right hand. Kite shield left arm. Full helmet visor. Broad stocky stance. Facing upward.
+Animation: subtle breathing, sword glow pulses.
+Pixel-perfect. No background. No anti-aliasing. Max 10 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 4 frames, horizontal strip, left-to-right. Transparent background.
 
@@ -31,7 +53,22 @@ Light: Top-left 45°. Hard pixel shadows. 2-3 shade levels.
 Rules: Clean pixel art. No anti-aliasing. No outlines >1px. Max 10 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Knight — Run (6 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Knight Run
+64x64, 6 frames, horizontal strip, transparent background.
+Blue armored knight running. Heavy footsteps. Armor plates shift with each step. Sword and shield held. Facing upward.
+Animation: weight shifts left-right, armor segments separate at joints.
+Pixel-perfect. No background. Max 10 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 6 frames, horizontal strip. Transparent background.
 
@@ -43,7 +80,22 @@ Color: Armor #4488ff, Dark #2266cc, Glow #88ccff, Shield #aaccff.
 Rules: Clean pixel art. No anti-aliasing. Max 10 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Knight — Attack (3 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Knight Attack
+64x64, 3 frames, horizontal strip, transparent background.
+Knight sword swing. Frame 1: wind-up. Frame 2: mid-swing with blue arc trail. Frame 3: follow-through.
+Blue energy trail follows blade. Powerful horizontal slash.
+Pixel-perfect. No background. Max 10 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 3 frames, horizontal strip. Transparent background.
 
@@ -55,7 +107,21 @@ Color: Armor #4488ff, Blade #88ccff, Arc trail #88ccff at 60% opacity.
 Rules: Clean pixel art. No anti-aliasing. Max 10 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Knight — Portrait
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Knight Portrait
+128x128, single frame, transparent background.
+Front-facing bust. Heavy blue plate armor. Full helmet with T-visor glowing blue. Broad shoulders. Shield lower-left. Sword pommel lower-right. Dramatic lighting.
+Menu card art. No background. Max 12 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 128x128 pixel-art portrait. Single frame. Transparent background.
 
@@ -69,6 +135,19 @@ Rules: Clean pixel art. Max 12 colors. No background. 16-bit dark fantasy. Menu 
 ---
 
 ### Archer — Idle (4 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Archer Idle
+64x64, 4 frames, horizontal strip, transparent background.
+Hooded ranger. Green cloak, hood up. Golden recurve bow left hand. Arrow nocked. Lean build. One foot forward. Quiver on back. Facing upward.
+Animation: cloak flutters, subtle weight shift.
+Pixel-perfect. No background. Max 10 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -80,7 +159,22 @@ Color: Cloak #44dd88, Shadow #228855, Bow/arrows #ffcc44, Hood interior dark.
 Rules: Clean pixel art. No anti-aliasing. Max 10 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Archer — Run (6 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Archer Run
+64x64, 6 frames, horizontal strip, transparent background.
+Hooded archer running. Green cloak flowing behind. Golden bow. Light agile footwork. Fast graceful movement. Facing upward.
+Animation: quick light steps, cloak streams behind.
+Pixel-perfect. No background. Max 10 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 6 frames, horizontal strip. Transparent background.
 
@@ -92,7 +186,21 @@ Color: Cloak #44dd88, Shadow #228855, Bow #ffcc44, Trail #88ffcc.
 Rules: Clean pixel art. No anti-aliasing. Max 10 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Archer — Attack (3 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Archer Attack
+64x64, 3 frames, horizontal strip, transparent background.
+Archer bow shot. Frame 1: draw bow back. Frame 2: release, arrow leaves. Frame 3: follow-through, golden streak.
+Pixel-perfect. No background. Max 10 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 3 frames, horizontal strip. Transparent background.
 
@@ -104,7 +212,21 @@ Color: Cloak #44dd88, Bow #ffcc44, Arrow streak #ffcc44 bright.
 Rules: Clean pixel art. No anti-aliasing. Max 10 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Archer — Portrait
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Archer Portrait
+128x128, single frame, transparent background.
+Front-facing bust. Green hooded cloak, hood up, face in shadow. Only faint eye glint. Golden bow behind right shoulder. Quiver arrows behind left. Mysterious ranger.
+Menu card art. No background. Max 12 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 128x128 pixel-art portrait. Single frame. Transparent background.
 
@@ -117,6 +239,19 @@ Rules: Clean pixel art. Max 12 colors. No background. 16-bit dark fantasy.
 ---
 
 ### Mage — Idle (4 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Mage Idle
+64x64, 4 frames, horizontal strip, transparent background.
+Floating sorcerer. Purple flowing robes. Tall glowing staff right hand, crystal top. Three orbiting elemental orbs (red, blue, yellow). Pointed hat. Hovering. Facing upward.
+Animation: floating bob, robes billow, orbs rotate.
+Pixel-perfect. No background. Max 12 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -128,7 +263,22 @@ Color: Robes #dd44ff, Shadow #8822cc, Orbs #ff6622 + #44aaff + #ffee44, Crystal 
 Rules: Clean pixel art. No anti-aliasing. Max 12 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Mage — Run (6 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Mage Run
+64x64, 6 frames, horizontal strip, transparent background.
+Floating mage gliding forward. Purple robes trailing. Staff forward. Orbs follow. No footsteps — hovering movement. Facing upward.
+Animation: gliding, robes trail, orbs streak.
+Pixel-perfect. No background. Max 12 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 6 frames, horizontal strip. Transparent background.
 
@@ -140,7 +290,21 @@ Color: Robes #dd44ff, Shadow #8822cc, Staff crystal glow.
 Rules: Clean pixel art. No anti-aliasing. Max 12 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Mage — Attack (3 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Mage Attack
+64x64, 3 frames, horizontal strip, transparent background.
+Mage staff thrust. Frame 1: staff raised. Frame 2: thrust forward, crystal flares white. Frame 3: energy burst from crystal.
+Pixel-perfect. No background. Max 12 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art sprite sheet. 3 frames, horizontal strip. Transparent background.
 
@@ -152,7 +316,21 @@ Color: Robes #dd44ff, Crystal flare #ffffff, Energy burst #dd44ff bright.
 Rules: Clean pixel art. No anti-aliasing. Max 12 colors. No background. 16-bit dark fantasy.
 ```
 
+---
+
 ### Mage — Portrait
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Mage Portrait
+128x128, single frame, transparent background.
+Front-facing bust. Purple robes. Pointed hat/crown. Staff with glowing crystal behind right shoulder. Three elemental orbs floating. Shadowed face, purple eye glow. Otherworldly.
+Menu card art. No background. Max 12 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 128x128 pixel-art portrait. Single frame. Transparent background.
 
@@ -166,7 +344,21 @@ Rules: Clean pixel art. Max 12 colors. No background. 16-bit dark fantasy.
 
 ## ENEMIES
 
+---
+
 ### Walker (4-frame walk)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Walker Walk
+32x32, 4 frames, horizontal strip, transparent background.
+Red shambling ghoul. Round head. White eye dots. Arms reaching forward. Circular silhouette. Slow shamble.
+No outlines. Max 6 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 32x32 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -176,7 +368,21 @@ Color: Body #ff4444, Shadow #aa2222, Eyes #ffffff.
 Rules: Clean pixel art. No outlines. Max 6 colors. No background. Dark fantasy.
 ```
 
+---
+
 ### Runner (6-frame run)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Runner Run
+32x32, 6 frames, horizontal strip, transparent background.
+Orange wolf-like quadruped. Lean elongated body. Low to ground. Pointed snout. Fast galloping.
+No outlines. Max 6 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 32x32 pixel-art sprite sheet. 6 frames, horizontal strip. Transparent background.
 
@@ -186,7 +392,21 @@ Color: Body #ff8844, Shadow #aa5522, Highlight #ffcc88.
 Rules: Clean pixel art. No outlines. Max 6 colors. No background. Dark fantasy.
 ```
 
+---
+
 ### Tank (4-frame walk)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Tank Walk
+48x48, 4 frames, horizontal strip, transparent background.
+Dark red armored golem. Square body. Glowing red core in chest. Massive heavy. Slow rocking side-to-side.
+1px outline. Max 8 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 48x48 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -196,7 +416,21 @@ Color: Armor #aa2222, Shadow #661111, Core #ff4444, Dark #553333.
 Rules: Clean pixel art. 1px outline. Max 8 colors. No background. Dark fantasy.
 ```
 
+---
+
 ### Ranged (4-frame idle)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Ranged Idle
+32x32, 4 frames, horizontal strip, transparent background.
+Pink floating wraith. Triangular silhouette — wide robes, pointed hood. Hovering. Glowing hands. Gentle bob.
+No outlines. Max 6 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 32x32 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -206,7 +440,21 @@ Color: Body #ff44aa, Shadow #882266, Glow #ffaacc.
 Rules: Clean pixel art. No outlines. Max 6 colors. No background. Dark fantasy.
 ```
 
+---
+
 ### Exploder (4-frame rush)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Exploder Rush
+40x40, 4 frames, horizontal strip, transparent background.
+Orange pulsing explosive blob. Diamond shape. Fire veins visible. White core. Growing larger each frame. Volatile dangerous.
+No outlines. Max 7 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 40x40 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -216,7 +464,21 @@ Color: Body #ffaa00, Veins #ff6600, Core #ffffff, Shadow #885500.
 Rules: Clean pixel art. No outlines. Max 7 colors. No background. Dark fantasy.
 ```
 
+---
+
 ### Flyer (6-frame fly)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Flyer Fly
+32x32, 6 frames, horizontal strip, transparent background.
+Cyan bat-wing creature. Wings spread wide. Small body. Flapping up-down. White eye dots. Airborne.
+No outlines. Max 6 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 32x32 pixel-art sprite sheet. 6 frames, horizontal strip. Transparent background.
 
@@ -226,7 +488,21 @@ Color: Body #88ccff, Wings #5599cc, Eyes #ffffff, Shadow #335566.
 Rules: Clean pixel art. No outlines. Max 6 colors. No background. Dark fantasy.
 ```
 
+---
+
 ### Splitter (4-frame move)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Splitter Move
+40x40, 4 frames, horizontal strip, transparent background.
+Green slime blob. Amorphous mass. Visible center seam. Two dark nuclei inside. Wobbling jelly movement.
+No outlines. Max 6 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 40x40 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -236,7 +512,21 @@ Color: Body #44ff88, Nuclei #22aa55, Highlight #aaffcc, Shadow #227744.
 Rules: Clean pixel art. No outlines. Max 6 colors. No background. Dark fantasy.
 ```
 
+---
+
 ### Shielder (4-frame walk)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Shielder Walk
+48x48, 4 frames, horizontal strip, transparent background.
+Dark blue armored warrior. Large glowing energy shield arc on front. Semi-transparent bright blue barrier. Back exposed/darker. Slow advance.
+1px outline. Max 8 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 48x48 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -246,7 +536,21 @@ Color: Body #333366, Shield #88aaff (semi-transparent), Primary #4466ff, Shadow 
 Rules: Clean pixel art. 1px outline. Max 8 colors. No background. Dark fantasy.
 ```
 
-### Healer (3-frame heal cast)
+---
+
+### Healer (3-frame heal)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Healer Heal Cast
+32x32, 3 frames, horizontal strip, transparent background.
+Green robed priest figure. Hovering. Frame 1: hands low. Frame 2: hands raised, green energy gathers. Frame 3: green burst outward.
+No outlines. Max 6 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 32x32 pixel-art sprite sheet. 3 frames, horizontal strip. Transparent background.
 
@@ -260,17 +564,45 @@ Rules: Clean pixel art. No outlines. Max 6 colors. No background. Dark fantasy.
 
 ## BOSSES
 
+---
+
 ### Boss Titan — Idle (4 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Boss Titan Idle
+96x96, 4 frames, horizontal strip, transparent background.
+Massive humanoid golem. Cracked obsidian armor. Red glowing fissures. Molten orange chest core. Hunched posture. Crown of spikes. Breathing/pulsing.
+1px outline. Max 10 colors. No background. Boss-scale.
+```
+
+**Standalone Prompt:**
 ```
 Create a 96x96 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
-Subject: Massive humanoid golem boss idle. Top-down 45° view. Cracked obsidian armor. Red glowing fissures across body. Molten orange core in chest. Hunched aggressive posture. Crown of jagged spikes. Massive arms. Breathing/pulsing animation.
+Subject: Massive humanoid golem boss idle. Top-down 45° view. Cracked obsidian black armor. Red glowing fissures across body. Molten orange core in chest. Hunched aggressive posture. Crown of jagged spikes. Massive arms. Breathing/pulsing animation.
 
 Color: Obsidian #882222, Fissures #ff4444, Core #ff8844, Dark #441111.
 Rules: Clean pixel art. 1px outline. Max 10 colors. No background. Dark fantasy. Boss-scale.
 ```
 
+---
+
 ### Boss Hydra — Idle (4 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Boss Hydra Idle
+112x112, 4 frames, horizontal strip, transparent background.
+Multi-headed serpent. Three heads spread in arc. Green scales. Coiled body. Golden eyes. White fangs. Tentacle appendages. Heads sway.
+1px outline. Max 10 colors. No background. Boss-scale.
+```
+
+**Standalone Prompt:**
 ```
 Create a 112x112 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -280,7 +612,21 @@ Color: Scales #228844, Dark #114422, Eyes #ffcc44, Fangs #ffffff, Accent #44dd88
 Rules: Clean pixel art. 1px outline. Max 10 colors. No background. Dark fantasy. Boss-scale.
 ```
 
+---
+
 ### Boss Lich King — Idle (4 frames)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md as the visual authority, generate:
+
+Boss Lich Idle
+88x88, 4 frames, horizontal strip, transparent background.
+Floating skeletal sorcerer king. Dark purple robes. Bone crown. Purple glowing eyes. Staff/scepter right hand. Necromantic energy swirling. Hovering.
+1px outline. Max 10 colors. No background. Boss-scale.
+```
+
+**Standalone Prompt:**
 ```
 Create a 88x88 pixel-art sprite sheet. 4 frames, horizontal strip. Transparent background.
 
@@ -294,42 +640,114 @@ Rules: Clean pixel art. 1px outline. Max 10 colors. No background. Dark fantasy.
 
 ## PROJECTILES
 
+---
+
 ### Sword Slash
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Sword Slash — 24x24, single frame, transparent.
+Blue crescent arc. White core. Blue #88ccff edge. Fading trail pixels. Energy weapon slash.
+Emissive. Max 4 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 24x24 pixel-art sprite. Single frame. Transparent background.
 Subject: Blue sword slash arc. Crescent shape. White #ffffff core. Blue #88ccff edge. Fading trail pixels. Energy arc.
 Rules: Clean pixel art. Emissive. Max 4 colors. No background.
 ```
 
+---
+
 ### Arrow
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Arrow — 24x8, single frame, transparent.
+Golden arrow horizontal pointing right. White tip. Gold #ffcc44 shaft. Dark fletching. Motion trail.
+Emissive tip. Max 4 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 24x8 pixel-art sprite. Single frame. Transparent background.
-Subject: Golden arrow. Horizontal pointing right. White tip. Gold #ffcc44 shaft. Dark fletching. Motion trail.
+Subject: Golden arrow. Horizontal pointing right. White tip. Gold #ffcc44 shaft. Dark fletching. Motion trail pixels behind.
 Rules: Clean pixel art. Emissive tip. Max 4 colors. No background.
 ```
 
+---
+
 ### Fireball
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Fireball — 20x20, single frame, transparent.
+Circular flame. White hot center. Yellow #ffcc00 inner. Orange #ff6600 outer. Trail particles.
+Emissive. Max 5 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 20x20 pixel-art sprite. Single frame. Transparent background.
-Subject: Fireball. Circular. White hot center. Yellow #ffcc00 inner. Orange #ff6600 outer flame. Trail particles.
+Subject: Fireball. Circular flame. White hot center. Yellow #ffcc00 inner ring. Orange #ff6600 outer flame. Trail particles.
 Rules: Clean pixel art. Emissive. Max 5 colors. No background.
 ```
 
+---
+
 ### Ice Shard
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Ice Shard — 16x16, single frame, transparent.
+Angular crystal shard. White center. Blue #44aaff body. Dark #2266aa edges. Frost trail. Pointed.
+Max 4 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 16x16 pixel-art sprite. Single frame. Transparent background.
-Subject: Ice crystal shard. Angular faceted shape. White center. Blue #44aaff body. Dark #2266aa edges. Frost trail.
+Subject: Ice crystal shard. Angular faceted shape. White center. Blue #44aaff body. Dark #2266aa edges. Frost trail. Pointed.
 Rules: Clean pixel art. Max 4 colors. No background.
 ```
 
+---
+
 ### Lightning Bolt
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Lightning Bolt — 16x16, single frame, transparent.
+Jagged zig-zag bolt. White core. Yellow #ffee44 body. Spark pixels. Angular sharp.
+Emissive. Max 4 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 16x16 pixel-art sprite. Single frame. Transparent background.
 Subject: Lightning bolt. Jagged zig-zag. White core. Yellow #ffee44 body. Spark pixels. Angular sharp.
 Rules: Clean pixel art. Emissive. Max 4 colors. No background.
 ```
 
+---
+
 ### Enemy Shot
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Enemy Shot — 12x12, single frame, transparent.
+Dark red orb. Black #220000 core. Red #ff4444 body. Dark #aa2222 edge. Menacing dark energy.
+Max 3 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 12x12 pixel-art sprite. Single frame. Transparent background.
 Subject: Dark red enemy projectile orb. Black #220000 core. Red #ff4444 body. Dark #aa2222 edge. Menacing.
@@ -340,35 +758,95 @@ Rules: Clean pixel art. Max 3 colors. No background.
 
 ## EFFECTS & PARTICLES
 
+---
+
 ### XP Orb
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+XP Orb — 16x16, single frame, transparent.
+Glowing blue sphere. Semi-transparent outer glow. Bright #aaddff core. White highlight top-left. Magical collectible.
+Emissive. Max 4 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 16x16 pixel-art sprite. Single frame. Transparent background.
 Subject: Glowing blue XP orb. Semi-transparent outer glow #4488ff. Solid bright #aaddff core. White highlight top-left. Magical collectible sphere.
 Rules: Clean pixel art. Emissive. Max 4 colors. No background.
 ```
 
+---
+
 ### Hit Spark
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Hit Spark — 8x8, single frame, transparent.
+4-point star. White center. Gold #ffcc44 tips. Impact flash.
+Max 2 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 8x8 pixel-art sprite. Single frame. Transparent background.
 Subject: Hit spark. 4-point star. White #ffffff center. Gold #ffcc44 tips. Impact flash.
 Rules: Clean pixel art. Max 2 colors. No background.
 ```
 
+---
+
 ### Burn Ember
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Burn Ember — 8x8, single frame, transparent.
+Fire teardrop pointing up. Yellow #ffcc00 core. Orange #ff6600 outer. Rising ember.
+Max 2 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 8x8 pixel-art sprite. Single frame. Transparent background.
-Subject: Fire ember. Teardrop shape pointing up. Yellow #ffcc00 core. Orange #ff6600 outer. Rising.
+Subject: Fire ember. Teardrop pointing up. Yellow #ffcc00 core. Orange #ff6600 outer. Rising.
 Rules: Clean pixel art. Max 2 colors. No background.
 ```
 
-### Ice Crystal Particle
+---
+
+### Ice Crystal
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Ice Crystal — 8x8, single frame, transparent.
+Small hexagonal crystal. White center. Blue #44aaff body. Angular faceted.
+Max 2 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 8x8 pixel-art sprite. Single frame. Transparent background.
 Subject: Ice crystal particle. Small hexagon. White center. Blue #44aaff body. Angular.
 Rules: Clean pixel art. Max 2 colors. No background.
 ```
 
+---
+
 ### Level-Up Star
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Level-Up Star — 12x12, single frame, transparent.
+Golden 4-point star. White center. Gold #ffcc44 body. Celebratory bright.
+Max 2 colors.
+```
+
+**Standalone Prompt:**
 ```
 Create a 12x12 pixel-art sprite. Single frame. Transparent background.
 Subject: Golden star particle. 4-point star. White center. Gold #ffcc44 body. Celebratory.
@@ -379,122 +857,115 @@ Rules: Clean pixel art. Max 2 colors. No background.
 
 ## ENVIRONMENT
 
+---
+
 ### Arena Tile (Dark)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Arena Tile Dark — 64x64, seamlessly tileable.
+Dark stone/metal grid floor. Navy #111122 base. Grid lines #1a1a33 every 16px. Faint purple #222244 seam glow.
+Max 4 colors. Must tile seamlessly. No bright elements.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art tile. Seamlessly tileable all 4 edges.
 Subject: Dark arena floor. Stone/metal grid. Navy #111122 base. Grid lines #1a1a33 every 16px. Faint purple #222244 seam glow. Flat gameplay surface.
 Rules: Clean pixel art. Max 4 colors. Must tile seamlessly. No bright elements. Dark fantasy.
 ```
 
+---
+
 ### Arena Tile (Volcanic)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Arena Tile Volcanic — 64x64, seamlessly tileable.
+Cracked dark stone #1a1111. Orange lava #ff4400 in cracks. Warm glow. Dangerous.
+Max 5 colors. Lava emissive. Must tile seamlessly.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art tile. Seamlessly tileable all 4 edges.
-Subject: Volcanic floor. Dark cracked stone #1a1111. Orange lava #ff4400 in cracks. Warm red glow. Dangerous heat.
+Subject: Volcanic floor. Dark cracked stone #1a1111. Orange lava #ff4400 in cracks. Warm red glow from below. Dangerous heat.
 Rules: Clean pixel art. Max 5 colors. Lava emissive. Must tile seamlessly. Dark fantasy.
 ```
 
+---
+
 ### Arena Tile (Frozen)
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Arena Tile Frozen — 64x64, seamlessly tileable.
+Dark ice #112233. Blue frost patterns #2244aa. Crystal formations #44aaff. Cold dangerous.
+Max 5 colors. Must tile seamlessly.
+```
+
+**Standalone Prompt:**
 ```
 Create a 64x64 pixel-art tile. Seamlessly tileable all 4 edges.
 Subject: Frozen cavern floor. Dark ice #112233. Blue frost patterns #2244aa. Crystal formations #44aaff. Cold and dangerous.
 Rules: Clean pixel art. Max 5 colors. Must tile seamlessly. Dark fantasy.
 ```
 
-### Arena Border
-```
-Create a 64x64 pixel-art tile. Transparent background.
-Subject: Arena energy barrier from top-down. Bright blue #4488ff energy line. Diffusing glow #2244aa. Dark base. Boundary wall.
-Rules: Clean pixel art. Emissive line. Max 4 colors. Dark fantasy.
-```
-
 ---
 
 ## UI
 
-### Logo
+---
+
+### Game Logo
+
+**Production Prompt:**
+```
+Using STYLE_GUIDE.md, generate:
+Logo — 512x128, transparent background.
+"SURVIVOR ROYALE" bold pixel font. Blue #4488ff text. Dark #2266cc shadow. Subtle glow. Dark fantasy medieval.
+Max 5 colors. No background.
+```
+
+**Standalone Prompt:**
 ```
 Create a 512x128 pixel-art logo. Transparent background.
 Subject: "SURVIVOR ROYALE" game title. Bold pixel font. Blue #4488ff main. Dark #2266cc shadow depth. Subtle glow aura. Medieval dark fantasy lettering.
 Rules: Clean pixel art. Max 5 colors. No background. Bold readable.
 ```
 
-### Upgrade Icons (32×32 each)
+---
 
-**atk_damage:**
-```
-32x32 pixel-art icon. Transparent. Red sword pointing up. #ff4444 blade. Dark handle. White edge highlight.
-```
+### Upgrade Icons (32×32)
 
-**atk_speed:**
-```
-32x32 pixel-art icon. Transparent. Orange speed lines + small sword silhouette. #ff8844 streaks.
-```
+**Production Prompts (one per icon):**
 
-**move_speed:**
 ```
-32x32 pixel-art icon. Transparent. Green boot with speed lines. #44dd88 boot. Motion streaks.
-```
-
-**max_hp:**
-```
-32x32 pixel-art icon. Transparent. Red heart + armor plate overlay. #ff2222 heart. Armored.
-```
-
-**defense:**
-```
-32x32 pixel-art icon. Transparent. Blue kite shield. #4488ff body. White highlight.
-```
-
-**dodge_cd:**
-```
-32x32 pixel-art icon. Transparent. Purple spiral/swirl. #aaaaff spinning motion.
-```
-
-**piercing:**
-```
-32x32 pixel-art icon. Transparent. Purple arrow through barrier. #ddaaff arrow.
-```
-
-**lifesteal:**
-```
-32x32 pixel-art icon. Transparent. Red blood droplet. #dd2244 teardrop. Fang marks.
-```
-
-**knockback:**
-```
-32x32 pixel-art icon. Transparent. Yellow impact burst. #ffcc00 starburst. White center.
-```
-
-**multishot:**
-```
-32x32 pixel-art icon. Transparent. Triple arrow spread. #ff6600 three arrows fanning out.
+atk_damage: 32x32, transparent. Red sword pointing up. #ff4444 blade. White edge. No background.
+atk_speed: 32x32, transparent. Orange speed lines + sword silhouette. #ff8844. No background.
+move_speed: 32x32, transparent. Green boot + speed lines. #44dd88. No background.
+max_hp: 32x32, transparent. Red heart + armor plate. #ff2222. No background.
+defense: 32x32, transparent. Blue kite shield. #4488ff. White highlight. No background.
+dodge_cd: 32x32, transparent. Purple spiral/swirl. #aaaaff. No background.
+piercing: 32x32, transparent. Purple arrow through barrier. #ddaaff. No background.
+lifesteal: 32x32, transparent. Red blood droplet. #dd2244. Fang marks. No background.
+knockback: 32x32, transparent. Yellow impact burst. #ffcc00. White center. No background.
+multishot: 32x32, transparent. Triple arrow spread. #ff6600. Fan pattern. No background.
 ```
 
 ---
 
-## Evolution Icons (48×48 each)
+### Evolution Icons (48×48)
 
-**divine_blade:**
-```
-48x48 pixel-art icon. Transparent. Golden lightning sword. #ffdd44 blade. White lightning. 2px gold border. Legendary.
-```
+**Production Prompts (one per icon):**
 
-**phantom_rush:**
 ```
-48x48 pixel-art icon. Transparent. Purple ghost with speed trails. #aa88ff phantom dashing. Afterimages. 2px gold border. Legendary.
-```
-
-**immortal_guard:**
-```
-48x48 pixel-art icon. Transparent. Green-gold shield + cross. #44ff88 shield. #ffcc44 cross. 2px gold border. Legendary.
-```
-
-**soul_reaper:**
-```
-48x48 pixel-art icon. Transparent. Red scythe + pink souls. #ff4488 blade. #ff88aa wisps. 2px gold border. Legendary.
-```
-
-**storm_barrage:**
-```
-48x48 pixel-art icon. Transparent. Cyan tornado + arrows. #44ddff vortex. Arrow shapes inside. 2px gold border. Legendary.
+divine_blade: 48x48, transparent. Golden lightning sword. #ffdd44. White lightning. 2px gold border. Legendary.
+phantom_rush: 48x48, transparent. Purple ghost + speed trails. #aa88ff. Afterimages. 2px gold border. Legendary.
+immortal_guard: 48x48, transparent. Green-gold shield + cross. #44ff88 + #ffcc44. 2px gold border. Legendary.
+soul_reaper: 48x48, transparent. Red scythe + pink souls. #ff4488 + #ff88aa. 2px gold border. Legendary.
+storm_barrage: 48x48, transparent. Cyan tornado + arrows. #44ddff. 2px gold border. Legendary.
 ```
