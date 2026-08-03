@@ -58,6 +58,15 @@ export class GameScene extends Phaser.Scene {
   private readonly COMBO_WINDOW = 2500; // ms between kills to keep combo
   private comboText!: Phaser.GameObjects.Text;
 
+  // Orbit shield state
+  private orbitShieldAngle: number = 0;
+  private orbitShieldGraphics!: Phaser.GameObjects.Graphics;
+  private _orbitHitCooldowns?: Map<Enemy, number>;
+
+  // Aim mode indicator
+  private aimIndicator!: Phaser.GameObjects.Graphics;
+  private aimModeText!: Phaser.GameObjects.Text;
+
   // Pause key
   private escKey!: Phaser.Input.Keyboard.Key;
 
@@ -150,6 +159,14 @@ export class GameScene extends Phaser.Scene {
     this.createBossBar();
     this.createComboText();
     this.minimap = new Minimap(this);
+    this.orbitShieldGraphics = this.add.graphics().setDepth(12);
+
+    // Aim mode indicator: crosshair that shows auto-target vs manual aim
+    this.aimIndicator = this.add.graphics().setDepth(200);
+    this.aimModeText = this.add.text(0, 0, 'AUTO', {
+      fontSize: '10px', color: '#88aacc', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(201).setAlpha(0.7);
 
     this.physics.world.setBounds(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
     this.player.setCollideWorldBounds(true);
@@ -165,6 +182,8 @@ export class GameScene extends Phaser.Scene {
     if (saveManager.getLifetimeStats().totalGamesPlayed === 0) {
       this.scene.launch('TutorialOverlay');
     }
+    // Launch touch controls for mobile devices
+    this.scene.launch('TouchControls');
     this.cameras.main.fadeIn(600, 0, 0, 0);
     SoundManager.getInstance().startBGM();
 
@@ -178,22 +197,61 @@ export class GameScene extends Phaser.Scene {
   // ── Arena ─────────────────────────────────────────────────────────────────
 
   private createArena() {
+    // ── Grasslands / Meadow theme ───────────────────────────────────────
     this.add
       .tileSprite(0, 0, ARENA_WIDTH, ARENA_HEIGHT, 'arena_tile')
       .setOrigin(0, 0)
       .setDepth(0);
 
+    // Arena border: wooden fence / hedgerow style
     this.add
       .rectangle(ARENA_WIDTH / 2, ARENA_HEIGHT / 2, ARENA_WIDTH, ARENA_HEIGHT)
-      .setStrokeStyle(4, 0x4488ff, 0.8)
+      .setStrokeStyle(6, 0x5c4a2a, 0.9)
+      .setDepth(1);
+    // Inner border highlight (lighter green hedge)
+    this.add
+      .rectangle(ARENA_WIDTH / 2, ARENA_HEIGHT / 2, ARENA_WIDTH - 16, ARENA_HEIGHT - 16)
+      .setStrokeStyle(3, 0x2d7d23, 0.6)
       .setDepth(1);
 
+    // Scatter flowers across the meadow
+    for (let i = 0; i < 80; i++) {
+      const fx = Phaser.Math.Between(80, ARENA_WIDTH - 80);
+      const fy = Phaser.Math.Between(80, ARENA_HEIGHT - 80);
+      const flower = this.add.image(fx, fy, 'flower_deco');
+      flower.setDepth(0.5).setAlpha(Phaser.Math.FloatBetween(0.5, 0.9));
+      flower.setScale(Phaser.Math.FloatBetween(0.7, 1.3));
+      flower.setRotation(Phaser.Math.FloatBetween(0, Math.PI * 2));
+      // Random tint for color variety
+      const flowerTints = [0xff6688, 0xffdd44, 0xffffff, 0xcc88ff, 0xff9944, 0xff4466];
+      flower.setTint(flowerTints[Phaser.Math.Between(0, flowerTints.length - 1)]!);
+    }
+
+    // Scatter grass tufts (taller grass patches)
+    for (let i = 0; i < 60; i++) {
+      const gx = Phaser.Math.Between(50, ARENA_WIDTH - 50);
+      const gy = Phaser.Math.Between(50, ARENA_HEIGHT - 50);
+      const tuft = this.add.image(gx, gy, 'grass_tuft');
+      tuft.setDepth(0.3).setAlpha(Phaser.Math.FloatBetween(0.4, 0.8));
+      tuft.setScale(Phaser.Math.FloatBetween(0.8, 1.5));
+    }
+
+    // A few larger decorative circles (dirt patches / clearings)
+    for (let i = 0; i < 5; i++) {
+      const px = Phaser.Math.Between(200, ARENA_WIDTH - 200);
+      const py = Phaser.Math.Between(200, ARENA_HEIGHT - 200);
+      const patch = this.add.circle(px, py, Phaser.Math.Between(30, 60), 0x6b5a2e, 0.15);
+      patch.setDepth(0.2);
+    }
+
+    // Corner bushes (darker green blobs)
     const corners = [
-      [0, 0], [ARENA_WIDTH, 0],
-      [0, ARENA_HEIGHT], [ARENA_WIDTH, ARENA_HEIGHT],
+      [60, 60], [ARENA_WIDTH - 60, 60],
+      [60, ARENA_HEIGHT - 60], [ARENA_WIDTH - 60, ARENA_HEIGHT - 60],
     ] as const;
     corners.forEach(([cx, cy]) => {
-      this.add.circle(cx, cy, 80, 0x0a0a2a, 0.5).setDepth(1);
+      this.add.circle(cx, cy, 40, 0x1d5d13, 0.6).setDepth(1);
+      this.add.circle(cx + 15, cy - 10, 25, 0x2a7a1e, 0.5).setDepth(1);
     });
   }
 
@@ -272,7 +330,7 @@ export class GameScene extends Phaser.Scene {
   private setupCamera() {
     this.cameras.main.setBounds(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-    this.cameras.main.setZoom(1.4);
+    this.cameras.main.setZoom(2.0);
   }
 
   // ── HUD ───────────────────────────────────────────────────────────────────
@@ -306,8 +364,8 @@ export class GameScene extends Phaser.Scene {
       .setScrollFactor(0).setDepth(111).setVisible(false);
 
     this.bossBarLabel = this.add
-      .text(bx, by - 18, '☠ THE TITAN', {
-        fontSize: '16px', color: '#ff4444',
+      .text(bx, by - 18, '👑 KING GOBLIN', {
+        fontSize: '16px', color: '#44aa22',
         fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
       })
       .setOrigin(0.5, 1)
@@ -335,9 +393,10 @@ export class GameScene extends Phaser.Scene {
     this.abilitySystem.update(delta, this.waveSystem.getEnemiesGroup());
 
     // Update XP orbs (pull toward player)
+    const magneticStacks = this.player.getUpgradeStacks('magnetic');
     this.xpOrbs.getChildren().forEach((o) => {
       const orb = o as XpOrb;
-      if (orb.active) orb.update(delta, this.player.x, this.player.y);
+      if (orb.active) orb.update(delta, this.player.x, this.player.y, magneticStacks);
     });
 
     // Boss HP bar tracking
@@ -350,6 +409,12 @@ export class GameScene extends Phaser.Scene {
       this.waveSystem.getEnemiesGroup(),
       this.xpOrbs
     );
+
+    // Orbit shield damage aura
+    this.updateOrbitShield(delta);
+
+    // Aim mode crosshair
+    this.updateAimIndicator();
 
     // Combo timer decay
     if (this.comboTimer > 0) {
@@ -402,6 +467,108 @@ export class GameScene extends Phaser.Scene {
     this.bossBarFill.setFillStyle(col);
   }
 
+
+  private updateOrbitShield(delta: number) {
+    const stacks = this.player.getUpgradeStacks('orbit_shield');
+    this.orbitShieldGraphics.clear();
+    if (stacks <= 0) return;
+
+    const orbCount = stacks * 2; // 2 orbs per stack
+    const orbitRadius = 60;
+    const orbSize = 8;
+    const orbDamage = Math.floor(this.player.attackDamage * 0.4);
+    const rotSpeed = 3; // radians per second
+
+    this.orbitShieldAngle += rotSpeed * (delta / 1000);
+
+    // Per-enemy hit cooldown: only damage each enemy once per 500ms
+    if (!this._orbitHitCooldowns) this._orbitHitCooldowns = new Map();
+    const now = Date.now();
+
+    for (let i = 0; i < orbCount; i++) {
+      const angle = this.orbitShieldAngle + (i / orbCount) * Math.PI * 2;
+      const orbX = this.player.x + Math.cos(angle) * orbitRadius;
+      const orbY = this.player.y + Math.sin(angle) * orbitRadius;
+
+      // Draw orb
+      this.orbitShieldGraphics.fillStyle(0x44aaff, 0.7);
+      this.orbitShieldGraphics.fillCircle(orbX, orbY, orbSize);
+      this.orbitShieldGraphics.lineStyle(1, 0x88ddff, 0.5);
+      this.orbitShieldGraphics.strokeCircle(orbX, orbY, orbSize);
+
+      // Check collision with enemies (only every 3rd orb per frame to spread cost)
+      if (i % 3 !== Math.floor(now / 50) % 3) continue;
+
+      this.waveSystem.getEnemiesGroup().getChildren().forEach((obj) => {
+        const enemy = obj as Enemy;
+        if (!enemy.active || enemy.hp <= 0) return;
+
+        // Skip if this enemy was recently hit
+        const lastHit = this._orbitHitCooldowns!.get(enemy);
+        if (lastHit && now - lastHit < 500) return;
+
+        const dist = Phaser.Math.Distance.Between(orbX, orbY, enemy.x, enemy.y);
+        if (dist < orbSize + 16) {
+          const kbAngle = Phaser.Math.Angle.Between(orbX, orbY, enemy.x, enemy.y);
+          enemy.takeDamage(orbDamage, kbAngle, 100);
+          this._orbitHitCooldowns!.set(enemy, now);
+        }
+      });
+    }
+
+    // Clean up stale cooldown entries every 60 frames
+    if (now % 1000 < 20) {
+      for (const [enemy, time] of this._orbitHitCooldowns) {
+        if (!enemy.active || now - time > 2000) {
+          this._orbitHitCooldowns.delete(enemy);
+        }
+      }
+    }
+  }
+
+  /**
+   * Draw an aim indicator near the player showing targeting mode:
+   * - AUTO (blue circle): auto-targeting nearest enemy
+   * - AIM (red crosshair): manual aim active (right-click held)
+   */
+  private updateAimIndicator() {
+    this.aimIndicator.clear();
+
+    const isManual = this.player.manualAimActive;
+    const cam = this.cameras.main;
+
+    if (isManual) {
+      // Red crosshair at cursor world position
+      const worldPoint = cam.getWorldPoint(this.input.activePointer.x, this.input.activePointer.y);
+      const cx = worldPoint.x;
+      const cy = worldPoint.y;
+
+      this.aimIndicator.lineStyle(1.5, 0xff4444, 0.8);
+      // Crosshair lines
+      this.aimIndicator.beginPath();
+      this.aimIndicator.moveTo(cx - 12, cy);
+      this.aimIndicator.lineTo(cx - 4, cy);
+      this.aimIndicator.moveTo(cx + 4, cy);
+      this.aimIndicator.lineTo(cx + 12, cy);
+      this.aimIndicator.moveTo(cx, cy - 12);
+      this.aimIndicator.lineTo(cx, cy - 4);
+      this.aimIndicator.moveTo(cx, cy + 4);
+      this.aimIndicator.lineTo(cx, cy + 12);
+      this.aimIndicator.strokePath();
+      // Circle
+      this.aimIndicator.strokeCircle(cx, cy, 8);
+
+      this.aimModeText.setText('⊕ AIM');
+      this.aimModeText.setColor('#ff6666');
+      this.aimModeText.setPosition(this.player.x, this.player.y - 30);
+    } else {
+      // Small auto-target indicator above player
+      this.aimModeText.setText('⟳ AUTO');
+      this.aimModeText.setColor('#88aacc');
+      this.aimModeText.setPosition(this.player.x, this.player.y - 30);
+    }
+  }
+
   private syncStore() {
     const store = useGameStore.getState();
     store.setPlayerStats(
@@ -436,10 +603,45 @@ export class GameScene extends Phaser.Scene {
 
   private spawnXpOrb(x: number, y: number, value: number) {
     const orb = new XpOrb(this, { x, y, value });
-    orb.onCollect = (o) => {
-      this.player.gainXp(o.xpValue);
-    };
     this.xpOrbs.add(orb);
+  }
+
+  private spawnHealOrb(x: number, y: number) {
+    // Create a green heal orb that restores 10% max HP on pickup
+    const healOrb = this.physics.add.image(x, y, 'xp_orb');
+    healOrb.setTint(0x44ff88);
+    healOrb.setScale(1.3);
+    healOrb.setDepth(8);
+
+    // Pulsing glow effect
+    this.tweens.add({
+      targets: healOrb,
+      scaleX: 1.6, scaleY: 1.6,
+      yoyo: true, duration: 500, repeat: -1,
+    });
+
+    // Pickup overlap with player
+    this.physics.add.overlap(this.player, healOrb, () => {
+      if (!healOrb.active) return;
+      const healAmt = Math.floor(this.player.maxHp * 0.1);
+      this.player.heal(healAmt);
+      playSound('comboHit', { pitch: 1.5 });
+      // Green floating number
+      const txt = this.add.text(this.player.x, this.player.y - 20, `+${healAmt}`, {
+        fontSize: '16px', color: '#44ff88', fontStyle: 'bold',
+        stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(200);
+      this.tweens.add({
+        targets: txt, y: this.player.y - 60, alpha: 0,
+        duration: 700, onComplete: () => txt.destroy(),
+      });
+      healOrb.destroy();
+    });
+
+    // Despawn after 8 seconds if not picked up
+    this.time.delayedCall(8000, () => {
+      if (healOrb.active) healOrb.destroy();
+    });
   }
 
   // ── Event handlers ────────────────────────────────────────────────────────
@@ -447,6 +649,9 @@ export class GameScene extends Phaser.Scene {
   private handleEnemyDeath(enemy: Enemy) {
     const store = useGameStore.getState();
     playSound('enemyDeath');
+
+    // Emit for tutorial tracking
+    this.events.emit('enemy-killed');
 
     // Trigger small hit-stop on kill
     this.hitStop.trigger(33); // 2 frames
@@ -464,12 +669,21 @@ export class GameScene extends Phaser.Scene {
     // Charge ultimate
     this.abilitySystem.onKill();
 
-    // Drop XP orb
-    this.spawnXpOrb(enemy.x, enemy.y, enemy.xpReward);
+    // Drop XP orb (with elite challenge bonus if active)
+    let xpReward = enemy.xpReward;
+    if ((this as any)._eliteChallengeActive) {
+      xpReward *= 2;
+    }
+    this.spawnXpOrb(enemy.x, enemy.y, xpReward);
 
-    // Lifesteal: gainXp is done by orb collect, but lifesteal is per-kill in WeaponSystem
+    // Healing orb drop: base 5% chance + 5% per 'lifesteal' upgrade stack
+    const healDropChance = 0.05 + (this.player.getUpgradeStacks('lifesteal') * 0.05);
+    if (Math.random() < healDropChance) {
+      this.spawnHealOrb(enemy.x, enemy.y);
+    }
+
     // If boss just died, hide bar
-    if (enemy.enemyType === 'boss_titan' || enemy.enemyType === 'boss_hydra' || enemy.enemyType === 'boss_lich') {
+    if (enemy.enemyType === 'boss_goblin_king' || enemy.enemyType === 'boss_hydra' || enemy.enemyType === 'boss_lich') {
       this.bossEnemy = null;
     }
   }
@@ -503,12 +717,12 @@ export class GameScene extends Phaser.Scene {
 
     // Determine boss label and announcement text
     const bossLabels: Record<string, string> = {
-      boss_titan: '☠ THE TITAN',
+      boss_goblin_king: '👑 KING GOBLIN',
       boss_hydra: '🐉 THE HYDRA',
       boss_lich: '💀 THE LICH KING',
     };
     const bossAnnouncements: Record<string, string> = {
-      boss_titan: '☠ THE TITAN APPROACHES',
+      boss_goblin_king: '👑 THE KING GOBLIN APPROACHES',
       boss_hydra: '🐉 THE HYDRA AWAKENS',
       boss_lich: '💀 THE LICH KING RISES',
     };
@@ -554,8 +768,167 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private handleWaveClear(_wave: number) {
-    // pause handled via waveSystem state machine
+  private handleWaveClear(wave: number) {
+    // Trigger a mid-run event every 3 waves (starting wave 3)
+    if (wave >= 3 && wave % 3 === 0 && !this.isLevelUpOpen) {
+      this.offerRiskRewardEvent(wave);
+    }
+  }
+
+  /**
+   * Risk/Reward event: offer the player a choice between waves.
+   * Events: Elite Challenge (more enemies for 2x XP), Cursed Upgrade, or Safe Bonus.
+   */
+  private offerRiskRewardEvent(wave: number) {
+    this.isLevelUpOpen = true; // pause the game
+
+    const { width, height } = this.cameras.main;
+    const cx = width / 2;
+    const cy = height / 2;
+
+    // Semi-transparent backdrop
+    const backdrop = this.add.rectangle(cx, cy, width, height, 0x000000, 0.6)
+      .setScrollFactor(0).setDepth(300);
+
+    const titleText = this.add.text(cx, cy - 120, '⚡ MID-RUN EVENT', {
+      fontSize: '32px', color: '#ffcc00', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(301);
+
+    // Generate 2 options
+    const events = this.generateEventOptions(wave);
+    const buttons: Phaser.GameObjects.Container[] = [];
+
+    events.forEach((event, idx) => {
+      const bx = cx + (idx === 0 ? -160 : 160);
+      const by = cy + 20;
+
+      const bg = this.add.rectangle(bx, by, 280, 180, event.color, 0.8)
+        .setStrokeStyle(2, 0xffffff).setInteractive({ useHandCursor: true });
+      const name = this.add.text(bx, by - 60, event.icon + ' ' + event.name, {
+        fontSize: '18px', color: '#ffffff', fontStyle: 'bold',
+        stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(0.5);
+      const desc = this.add.text(bx, by - 20, event.description, {
+        fontSize: '13px', color: '#dddddd', wordWrap: { width: 240 },
+        stroke: '#000000', strokeThickness: 2,
+      }).setOrigin(0.5);
+      const risk = this.add.text(bx, by + 40, event.risk, {
+        fontSize: '12px', color: '#ff8888',
+        stroke: '#000000', strokeThickness: 2,
+      }).setOrigin(0.5);
+
+      const container = this.add.container(0, 0, [bg, name, desc, risk])
+        .setDepth(302);
+
+      bg.on('pointerdown', () => {
+        event.apply();
+        // Clean up
+        backdrop.destroy();
+        titleText.destroy();
+        buttons.forEach(c => c.destroy());
+        this.isLevelUpOpen = false;
+      });
+
+      bg.on('pointerover', () => bg.setStrokeStyle(3, 0xffcc00));
+      bg.on('pointerout', () => bg.setStrokeStyle(2, 0xffffff));
+
+      buttons.push(container);
+    });
+
+    // Set scroll factor on all container children
+    buttons.forEach(container => {
+      container.setScrollFactor(0);
+      container.each((child: Phaser.GameObjects.GameObject) => {
+        if ('setScrollFactor' in child) {
+          (child as any).setScrollFactor(0);
+        }
+      });
+    });
+  }
+
+  private generateEventOptions(_wave: number): Array<{
+    name: string;
+    icon: string;
+    description: string;
+    risk: string;
+    color: number;
+    apply: () => void;
+  }> {
+    const options = [
+      {
+        name: 'Elite Challenge',
+        icon: '💀',
+        description: 'Next wave spawns 50% more enemies (all eligible for elite). Earn 2× XP for the wave.',
+        risk: 'RISK: More enemies, more elites',
+        color: 0x661122,
+        apply: () => {
+          // Temporarily boost enemy count and XP for one wave
+          // We'll hack this via the player's XP gain multiplier for the next wave
+          (this as any)._eliteChallengeActive = true;
+          const txt = this.add.text(640, 100, '💀 ELITE CHALLENGE ACTIVE', {
+            fontSize: '20px', color: '#ff4444', fontStyle: 'bold',
+            stroke: '#000000', strokeThickness: 3,
+          }).setOrigin(0.5).setScrollFactor(0).setDepth(105);
+          this.time.delayedCall(8000, () => txt.destroy());
+        },
+      },
+      {
+        name: 'Blood Pact',
+        icon: '🩸',
+        description: 'Sacrifice 30% current HP. Gain +35% attack damage permanently.',
+        risk: 'RISK: Lose 30% of your current HP',
+        color: 0x440022,
+        apply: () => {
+          const sacrifice = Math.floor(this.player.hp * 0.3);
+          this.player.hp = Math.max(1, this.player.hp - sacrifice);
+          this.player.attackDamage *= 1.35;
+        },
+      },
+      {
+        name: 'Glass Blessing',
+        icon: '✨',
+        description: '+25% attack speed, +20% move speed. But -20% max HP permanently.',
+        risk: 'RISK: Permanently lower max HP',
+        color: 0x222244,
+        apply: () => {
+          this.player.attackSpeed *= 1.25;
+          this.player.speed *= 1.2;
+          const hpLoss = Math.floor(this.player.maxHp * 0.2);
+          this.player.maxHp -= hpLoss;
+          this.player.hp = Math.min(this.player.hp, this.player.maxHp);
+        },
+      },
+      {
+        name: 'Safe Haven',
+        icon: '💚',
+        description: 'Heal to full HP and gain a temporary shield (5s invincibility).',
+        risk: 'SAFE: No downside',
+        color: 0x224422,
+        apply: () => {
+          this.player.hp = this.player.maxHp;
+          this.player.setInvincible(true);
+          this.time.delayedCall(5000, () => {
+            if (this.player.active) this.player.setInvincible(false);
+          });
+        },
+      },
+      {
+        name: 'Cursed Strength',
+        icon: '👹',
+        description: '+60% damage but dodge cooldown is doubled for the rest of the run.',
+        risk: 'RISK: Dodge cooldown ×2',
+        color: 0x442200,
+        apply: () => {
+          this.player.attackDamage *= 1.6;
+          (this.player as any).dodgeCooldown *= 2;
+        },
+      },
+    ];
+
+    // Pick 2 random options
+    const shuffled = [...options].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 2);
   }
 
   private handleSplitSpawn(children: Enemy[]) {
@@ -583,6 +956,8 @@ export class GameScene extends Phaser.Scene {
     useGameStore.getState().setWave(wave);
     this.comboCount = 0;
     this.comboTimer = 0;
+    // Clear elite challenge after one wave
+    (this as any)._eliteChallengeActive = false;
 
     const txt = this.add
       .text(640, 360, `WAVE ${wave}`, {

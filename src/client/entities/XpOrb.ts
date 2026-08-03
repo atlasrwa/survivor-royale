@@ -55,17 +55,18 @@ export class XpOrb extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  update(delta: number, playerX: number, playerY: number) {
+  update(delta: number, playerX: number, playerY: number, magneticStacks: number = 0) {
     if (!this.active) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, playerX, playerY);
+    const effectivePullRange = PULL_RANGE * (1 + magneticStacks * 2); // 3x per stack
 
     if (dist <= COLLECT_RANGE) {
       this.collect();
       return;
     }
 
-    if (dist <= PULL_RANGE || this.isPulled) {
+    if (dist <= effectivePullRange || this.isPulled) {
       this.isPulled = true;
       this.moveToward(playerX, playerY, PULL_SPEED, delta);
     } else {

@@ -10,7 +10,12 @@ export type UpgradeId =
   | 'piercing'
   | 'lifesteal'
   | 'knockback'
-  | 'multishot';
+  | 'multishot'
+  | 'orbit_shield'
+  | 'magnetic'
+  | 'chain_shot'
+  | 'adrenaline'
+  | 'glass_cannon';
 
 export interface UpgradeDefinition {
   id: UpgradeId;
@@ -73,10 +78,10 @@ export const UPGRADE_DEFINITIONS: Record<UpgradeId, UpgradeDefinition> = {
   },
   lifesteal: {
     id: 'lifesteal',
-    name: '🩸 Vampiric',
-    description: 'Heal 3 HP on kill',
-    color: 0xdd2244,
-    maxStacks: 5,
+    name: '💚 Healing Drops',
+    description: '+5% chance enemies drop healing orbs',
+    color: 0x44ff88,
+    maxStacks: 4,
   },
   knockback: {
     id: 'knockback',
@@ -91,6 +96,41 @@ export const UPGRADE_DEFINITIONS: Record<UpgradeId, UpgradeDefinition> = {
     description: 'Fire +1 extra projectile per shot',
     color: 0xff6600,
     maxStacks: 3,
+  },
+  orbit_shield: {
+    id: 'orbit_shield',
+    name: '🔄 Orbit Shield',
+    description: '2 projectiles orbit you dealing contact damage',
+    color: 0x44aaff,
+    maxStacks: 3,
+  },
+  magnetic: {
+    id: 'magnetic',
+    name: '🧲 Magnetic Pull',
+    description: 'XP orbs attract from 3× further away',
+    color: 0xaa44ff,
+    maxStacks: 3,
+  },
+  chain_shot: {
+    id: 'chain_shot',
+    name: '⛓️ Chain Shot',
+    description: 'Projectiles bounce to 1 extra target at 50% dmg',
+    color: 0x44ffaa,
+    maxStacks: 3,
+  },
+  adrenaline: {
+    id: 'adrenaline',
+    name: '💉 Adrenaline',
+    description: '+1% damage per 1% missing HP',
+    color: 0xff4488,
+    maxStacks: 1,
+  },
+  glass_cannon: {
+    id: 'glass_cannon',
+    name: '💎 Glass Cannon',
+    description: '+50% damage, -30% max HP (risky!)',
+    color: 0xff00ff,
+    maxStacks: 1,
   },
 };
 

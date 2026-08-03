@@ -4,6 +4,7 @@ import { Enemy } from './Enemy';
 
 export class Minimap {
   private graphics: Phaser.GameObjects.Graphics;
+  private scene: Phaser.Scene;
   private readonly SIZE = 140;
   private readonly PADDING = 10;
   private readonly X: number; // top-right position
@@ -12,6 +13,7 @@ export class Minimap {
   private readonly scaleY: number;
 
   constructor(scene: Phaser.Scene) {
+    this.scene = scene;
     // Position in top-right corner
     this.X = scene.scale.width - this.SIZE - this.PADDING - 60; // offset from edge to avoid overlap with score
     this.Y = this.PADDING + 80; // below wave counter
@@ -60,7 +62,7 @@ export class Minimap {
       const mx = this.X + enemy.x * this.scaleX;
       const my = this.Y + enemy.y * this.scaleY;
 
-      if (enemy.enemyType === 'boss_titan') {
+      if (enemy.enemyType === 'boss_goblin_king' || enemy.enemyType === 'boss_hydra' || enemy.enemyType === 'boss_lich') {
         this.graphics.fillStyle(0xff2222, 1);
         this.graphics.fillCircle(mx, my, 4);
       } else {
@@ -77,10 +79,13 @@ export class Minimap {
 
     // Camera viewport indicator (white rectangle showing visible area)
     // With zoom 1.4 on 1280x720: visible area is ~914x514px
-    const viewW = (1280 / 1.4) * this.scaleX;
-    const viewH = (720 / 1.4) * this.scaleY;
-    const viewX = this.X + (playerX - 1280 / 1.4 / 2) * this.scaleX;
-    const viewY = this.Y + (playerY - 720 / 1.4 / 2) * this.scaleY;
+    const cam = this.scene.cameras.main;
+    const visibleW = cam.width / cam.zoom;
+    const visibleH = cam.height / cam.zoom;
+    const viewW = visibleW * this.scaleX;
+    const viewH = visibleH * this.scaleY;
+    const viewX = this.X + (playerX - visibleW / 2) * this.scaleX;
+    const viewY = this.Y + (playerY - visibleH / 2) * this.scaleY;
     this.graphics.lineStyle(1, 0xffffff, 0.3);
     this.graphics.strokeRect(
       Phaser.Math.Clamp(viewX, this.X, this.X + this.SIZE),

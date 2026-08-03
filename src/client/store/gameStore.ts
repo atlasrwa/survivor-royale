@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { GamePhase, GameMode, GameSessionState } from '@/shared/types/waves';
 import type { HeroId } from '@/shared/types/entities';
 import type { DifficultyTier } from '@/shared/constants/difficulty';
+import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
 
 interface GameStore {
   // Session state
@@ -84,7 +85,8 @@ export const useGameStore = create<GameStore>((set) => ({
   enemiesRemaining: 0,
   waveCountdown: -1,
 
-  startGame: (hero, mode = 'solo') =>
+  startGame: (hero, mode = 'solo') => {
+    const heroHp = HERO_DEFINITIONS[hero]?.baseStats.maxHp ?? 150;
     set({
       phase: 'playing', mode, selectedHero: hero,
       wave: 1, score: 0, elapsed: 0, enemiesKilled: 0,
@@ -92,10 +94,11 @@ export const useGameStore = create<GameStore>((set) => ({
       activeAbilityRatio: 1, ultimateRatio: 1, ultimateChargeRatio: 0,
       dodgeCooldownRatio: 1,
       startedAt: Date.now(),
-      playerHp: 150, playerMaxHp: 150, playerLevel: 1,
+      playerHp: heroHp, playerMaxHp: heroHp, playerLevel: 1,
       playerXp: 0, playerXpToNextLevel: 100,
       enemiesRemaining: 0, waveCountdown: WAVE_COUNTDOWN_INITIAL,
-    }),
+    });
+  },
 
   setPhase: (phase) => set({ phase }),
 

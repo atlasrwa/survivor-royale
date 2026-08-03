@@ -12,7 +12,7 @@ export type EnemyType =
   | 'splitter'
   | 'shielder'
   | 'healer'
-  | 'boss_titan'
+  | 'boss_goblin_king'
   | 'boss_hydra'
   | 'boss_lich';
 

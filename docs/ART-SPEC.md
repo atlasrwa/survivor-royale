@@ -151,7 +151,7 @@
 
 | Boss | Texture Key | Size | Design | Animations |
 |------|-------------|------|--------|------------|
-| **The Titan** | `enemy_boss_titan` | 96×96 | Massive humanoid, cracked obsidian armor, molten core visible, 2 phases | idle (4f), walk (4f), attack_spread (4f), slam (4f), enrage (3f), death (6f) |
+| **King Goblin** | `enemy_boss_goblin_king` | 80×80 | Burly goblin with crown, battle armor, jagged blade, glowing eyes, 2 phases | idle (4f), walk (4f), attack_spread (4f), slam (4f), charge (4f), enrage (3f), death (6f) |
 | **The Hydra** | `enemy_boss_hydra` | 112×112 | Multi-headed serpent/dragon, green scales, each head attacks independently | idle (4f), slither (6f), attack_spread (4f), spawn_tentacle (3f), slam_aoe (4f), enrage (3f), death (6f) |
 | **The Lich King** | `enemy_boss_lich` | 88×88 | Floating skeletal sorcerer, dark purple robes, crown of bone, death ray emitter | idle (4f), float (4f), death_ray (3f), summon (4f), shield_phase (3f), ice_nova (4f), death (6f) |
 
@@ -352,7 +352,7 @@ assets/
 │   │   ├── walker_walk_4f.png
 │   │   ├── walker_death_3f.png
 │   │   ├── ... (all enemy types)
-│   │   ├── boss_titan_idle_4f.png
+│   │   ├── boss_goblin_king_idle_4f.png
 │   │   └── boss_lich_death_6f.png
 │   ├── projectiles/
 │   │   ├── sword_slash.png
@@ -424,7 +424,7 @@ When art assets are ready, integration requires:
 hero_knight, hero_archer, hero_mage
 enemy_walker, enemy_runner, enemy_tank, enemy_ranged, enemy_exploder
 enemy_flyer, enemy_splitter, enemy_shielder, enemy_healer
-enemy_boss_titan, enemy_boss_hydra, enemy_boss_lich
+enemy_boss_goblin_king, enemy_boss_hydra, enemy_boss_lich
 projectile_sword, projectile_arrow, projectile_fireball
 projectile_enemy
 arena_tile

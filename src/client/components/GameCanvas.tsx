@@ -10,6 +10,7 @@ import { PauseMenu } from '@/client/scenes/PauseMenu';
 import { SettingsScene } from '@/client/scenes/SettingsScene';
 import { TutorialOverlay } from '@/client/scenes/TutorialOverlay';
 import { SkillTreeScene } from '@/client/scenes/SkillTreeScene';
+import { TouchControls } from '@/client/scenes/TouchControls';
 
 let gameInstance: Phaser.Game | null = null;
 
@@ -24,21 +25,27 @@ export default function GameCanvas() {
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       parent: containerRef.current,
-      backgroundColor: '#0a0a1a',
+      backgroundColor: '#2a5c1e',
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 1280,
-        height: 720,
+        width: 800,
+        height: 480,
+        // Mobile: expand to fill screen
+        expandParent: true,
       },
       physics: {
         default: 'arcade',
         arcade: {
           gravity: { x: 0, y: 0 },
-          debug: process.env.NODE_ENV === 'development',
+          debug: false,
         },
       },
-      scene: [BootScene, PreloadScene, MainMenuScene, GameScene, GameOverScene, LevelUpOverlay, PauseMenu, SettingsScene, TutorialOverlay, SkillTreeScene],
+      // Mobile input: enable multi-touch
+      input: {
+        activePointers: 3,
+      },
+      scene: [BootScene, PreloadScene, MainMenuScene, GameScene, GameOverScene, LevelUpOverlay, PauseMenu, SettingsScene, TutorialOverlay, SkillTreeScene, TouchControls],
     };
 
     gameInstance = new Phaser.Game(config);

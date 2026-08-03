@@ -52,6 +52,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private readonly EXPLODE_RANGE = 50;
   private readonly EXPLODE_AOE = 100;
 
+  // Exploder explosion data (stored for GameScene to read after death)
+  private _explodeAoe: number = 0;
+  private _explodeDamage: number = 0;
+
+  // Lich shield bubble visual
+  private _lichShieldBubble: Phaser.GameObjects.Arc | null = null;
+
   // Death guard
   private isDying: boolean = false;
 
@@ -220,8 +227,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       case 'exploder':
         this.updateExploder(delta, targetX, targetY, distToTarget);
         break;
-      case 'boss_titan':
-        this.updateBossTitan(delta, targetX, targetY, distToTarget);
+      case 'boss_goblin_king':
+        this.updateBossGoblinKing(delta, targetX, targetY, distToTarget);
         break;
       case 'flyer':
         this.updateFlyer(delta, targetX, targetY, distToTarget);
@@ -297,20 +304,179 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  private updateBossTitan(_delta: number, targetX: number, targetY: number, _dist: number) {
-    this.chase(targetX, targetY, 1.0);
+  // King Goblin state
+  private goblinKingPhase: number = 1;
+  private goblinSlamTimer: number = 0;
+  private goblinCharging: boolean = false;
+  private goblinChargeTarget: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0);
+  private goblinChargeTimer: number = 0;
+  private goblinChargeWindup: boolean = false;
+  private goblinWindupTimer: number = 0;
+  private goblinSlamWarning: Phaser.GameObjects.Arc | null = null;
 
+  private updateBossGoblinKing(delta: number, targetX: number, targetY: number, _dist: number) {
+    const hpRatio = this.hp / this.maxHp;
+
+    // Phase transition at 50% HP
+    if (hpRatio <= 0.5 && this.goblinKingPhase === 1) {
+      this.goblinKingPhase = 2;
+      // Enrage visual
+      this.setTint(0xff4400);
+      this.scene.cameras.main.shake(400, 0.015);
+      // Speed boost in phase 2
+      this.speed *= 1.3;
+    }
+
+    // ── Phase 1: Chase + spread shot ───────────────────────────────
+    if (this.goblinKingPhase === 1) {
+      this.chase(targetX, targetY, 1.0);
+
+      if (this.attackCooldown <= 0) {
+        const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, targetX, targetY);
+        const spread = Math.PI / 8;
+        for (let i = -1; i <= 1; i++) {
+          const angle = baseAngle + i * spread;
+          this.onFireProjectile?.(this.x, this.y, angle, this.attackDamage);
+        }
+        this.attackCooldown = 1000 / (this.attackSpeed || 0.6);
+      }
+      return;
+    }
+
+    // ── Phase 2: Ground slam AoE + charge attack ───────────────────
+    // Handle charge windup
+    if (this.goblinChargeWindup) {
+      this.goblinWindupTimer -= delta;
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setVelocity(0, 0); // Stand still during windup
+
+      // Flash red during windup
+      const flashRate = Math.sin(Date.now() / 80);
+      this.setAlpha(0.6 + flashRate * 0.4);
+
+      if (this.goblinWindupTimer <= 0) {
+        this.goblinChargeWindup = false;
+        this.goblinCharging = true;
+        this.goblinChargeTimer = 600; // charge for 600ms
+        this.setAlpha(1);
+
+        // Set charge direction toward where player WAS at start of windup
+        const chargeAngle = Phaser.Math.Angle.Between(this.x, this.y, this.goblinChargeTarget.x, this.goblinChargeTarget.y);
+        this.goblinChargeTarget.set(
+          Math.cos(chargeAngle) * this.speed * 4,
+          Math.sin(chargeAngle) * this.speed * 4
+        );
+      }
+      return;
+    }
+
+    // Handle active charge
+    if (this.goblinCharging) {
+      this.goblinChargeTimer -= delta;
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setVelocity(this.goblinChargeTarget.x, this.goblinChargeTarget.y);
+
+      if (this.goblinChargeTimer <= 0) {
+        this.goblinCharging = false;
+        // Impact slam at charge endpoint
+        this.executeGoblinSlam();
+      }
+      return;
+    }
+
+    // Normal phase 2 behavior: chase + faster spread + periodic abilities
+    this.chase(targetX, targetY, 1.2);
+
+    // Faster spread shot (5 projectiles instead of 3)
     if (this.attackCooldown <= 0) {
       const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, targetX, targetY);
-      const spread = Math.PI / 8;
-
-      for (let i = -1; i <= 1; i++) {
-        const angle = baseAngle + i * spread;
+      const spread = Math.PI / 6;
+      for (let i = -2; i <= 2; i++) {
+        const angle = baseAngle + i * (spread / 2);
         this.onFireProjectile?.(this.x, this.y, angle, this.attackDamage);
       }
-
-      this.attackCooldown = 1000 / (this.attackSpeed || 0.4);
+      this.attackCooldown = 1000 / ((this.attackSpeed || 0.6) * 1.5);
     }
+
+    // Ground slam timer (every 4s)
+    this.goblinSlamTimer += delta;
+    if (this.goblinSlamTimer >= 4000) {
+      this.goblinSlamTimer = 0;
+
+      // Alternate between slam and charge
+      if (Math.random() < 0.5) {
+        this.startGoblinSlamWarning();
+      } else {
+        // Start charge windup
+        this.goblinChargeWindup = true;
+        this.goblinWindupTimer = 1500; // 1.5s telegraph before charge
+        this.goblinChargeTarget.set(targetX, targetY);
+      }
+    }
+  }
+
+  private startGoblinSlamWarning() {
+    // Red circle warning for 1s before damage
+    this.goblinSlamWarning = this.scene.add.circle(this.x, this.y, 150, 0xff4400, 0.15);
+    this.goblinSlamWarning.setDepth(3);
+    this.goblinSlamWarning.setStrokeStyle(3, 0xff4400, 0.6);
+
+    this.scene.tweens.add({
+      targets: this.goblinSlamWarning,
+      alpha: 0.5,
+      scale: 1.2,
+      duration: 1000,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        this.executeGoblinSlam();
+      },
+    });
+  }
+
+  private executeGoblinSlam() {
+    if (!this.active || this.hp <= 0) {
+      this.goblinSlamWarning?.destroy();
+      this.goblinSlamWarning = null;
+      return;
+    }
+
+    // Visual slam impact
+    const impact = this.scene.add.circle(this.x, this.y, 150, 0xff6600, 0.6);
+    impact.setDepth(4);
+    this.scene.tweens.add({
+      targets: impact,
+      alpha: 0,
+      scale: 1.5,
+      duration: 400,
+      ease: 'Power2',
+      onComplete: () => impact.destroy(),
+    });
+
+    // Ground cracks (4 lines outward)
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const endX = this.x + Math.cos(angle) * 130;
+      const endY = this.y + Math.sin(angle) * 130;
+      const crack = this.scene.add.line(0, 0, this.x, this.y, endX, endY, 0xff4400, 0.8);
+      crack.setDepth(4).setLineWidth(3);
+      this.scene.tweens.add({
+        targets: crack,
+        alpha: 0,
+        duration: 600,
+        onComplete: () => crack.destroy(),
+      });
+    }
+
+    // Fire AoE damage ring
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      this.onFireProjectile?.(this.x, this.y, angle, this.attackDamage * 1.5);
+    }
+
+    this.scene.cameras.main.shake(300, 0.02);
+
+    this.goblinSlamWarning?.destroy();
+    this.goblinSlamWarning = null;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -465,17 +631,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   // ── Healer ──────────────────────────────────────────────────────────────
 
   private updateHealer(delta: number, targetX: number, targetY: number, dist: number) {
-    const preferredMinDist = 200;
-    const preferredMaxDist = 250;
+    const preferredMinDist = 130; // was 200 — healers are easier to chase down now
+    const preferredMaxDist = 180; // was 250
 
     const body = this.body as Phaser.Physics.Arcade.Body;
 
     if (dist < preferredMinDist) {
-      // Run away from player
+      // Run away from player (slower retreat than before)
       const awayAngle = Phaser.Math.Angle.Between(targetX, targetY, this.x, this.y);
       body.setVelocity(
-        Math.cos(awayAngle) * this.speed,
-        Math.sin(awayAngle) * this.speed
+        Math.cos(awayAngle) * this.speed * 0.7, // was 1.0 — reduced flee speed
+        Math.sin(awayAngle) * this.speed * 0.7
       );
     } else if (dist > preferredMaxDist) {
       // Find nearest ally and move toward them (or player if we must)
@@ -503,16 +669,30 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       );
     }
 
-    // Heal timer
+    // Heal timer + visual charge indicator
     this.healTimer += delta;
+
+    // Draw heal charge indicator (growing green circle around healer)
+    if (this.healBeamGraphics) {
+      this.healBeamGraphics.clear();
+      const chargeRatio = Math.min(1, this.healTimer / this.HEAL_INTERVAL);
+      if (chargeRatio > 0.3) {
+        // Visible charging indicator
+        const radius = 12 + chargeRatio * 8;
+        this.healBeamGraphics.lineStyle(2, 0x66ff66, chargeRatio * 0.8);
+        this.healBeamGraphics.strokeCircle(this.x, this.y, radius);
+        // Pulsing when almost ready
+        if (chargeRatio > 0.8) {
+          const pulse = Math.sin(Date.now() / 100) * 0.3 + 0.7;
+          this.healBeamGraphics.lineStyle(1, 0xaaffaa, pulse * 0.5);
+          this.healBeamGraphics.strokeCircle(this.x, this.y, radius + 4);
+        }
+      }
+    }
+
     if (this.healTimer >= this.HEAL_INTERVAL) {
       this.healTimer = 0;
       this.performHeal();
-    }
-
-    // Clear heal beam each frame (it's redrawn during performHeal)
-    if (this.healBeamGraphics) {
-      this.healBeamGraphics.clear();
     }
 
     const faceAngle = Phaser.Math.Angle.Between(this.x, this.y, targetX, targetY);
@@ -763,7 +943,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const shieldBubble = this.scene.add.circle(this.x, this.y, 60, 0x6622aa, 0.3);
     shieldBubble.setDepth(8);
     shieldBubble.setStrokeStyle(3, 0xaa44ff, 0.8);
-    (this as unknown as Record<string, unknown>)['_lichShieldBubble'] = shieldBubble;
+    this._lichShieldBubble = shieldBubble;
 
     // Spawn shield orbs (visual indicators that it can be broken)
     this.onSummon?.(this.x + 80, this.y, 'walker', 1);
@@ -788,9 +968,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.lichPostShield = true;
 
       // Remove bubble visual
-      const bubble = (this as unknown as Record<string, unknown>)['_lichShieldBubble'] as Phaser.GameObjects.Arc | undefined;
-      bubble?.destroy();
-      (this as unknown as Record<string, unknown>)['_lichShieldBubble'] = undefined;
+      this._lichShieldBubble?.destroy();
+      this._lichShieldBubble = null;
     }
   }
 
@@ -888,8 +1067,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.scene.cameras.main.shake(200, 0.01);
 
-    (this as unknown as Record<string, unknown>)['_explodeAoe'] = this.EXPLODE_AOE;
-    (this as unknown as Record<string, unknown>)['_explodeDamage'] = this.attackDamage;
+    this._explodeAoe = this.EXPLODE_AOE;
+    this._explodeDamage = this.attackDamage;
 
     this.hpBar?.destroy();
     this.onDeath?.(this);
@@ -939,7 +1118,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       && !this.isStunned
       && this.enemyType !== 'ranged'
       && this.enemyType !== 'exploder'
-      && this.enemyType !== 'boss_titan'
+      && this.enemyType !== 'boss_goblin_king'
       && this.enemyType !== 'boss_hydra'
       && this.enemyType !== 'boss_lich';
   }
@@ -1016,11 +1195,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   getExplosionAoe(): number {
-    return (this as unknown as Record<string, unknown>)['_explodeAoe'] as number ?? 0;
+    return this._explodeAoe;
   }
 
   getExplosionDamage(): number {
-    return (this as unknown as Record<string, unknown>)['_explodeDamage'] as number ?? 0;
+    return this._explodeDamage;
   }
 
   takeDamage(
@@ -1140,6 +1319,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hpBar.clear();
     if (!this.active) return;
 
+    // Performance: don't render HP bar for full-health non-elite enemies
+    const ratio = Math.max(0, this.hp / this.maxHp);
+    if (ratio >= 1 && !this.eliteModifier) return;
+
     const barW = 32;
     const barH = 4;
     const bx = this.x - barW / 2;
@@ -1150,7 +1333,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hpBar.fillRect(bx, by, barW, barH);
 
     // HP fill
-    const ratio = Math.max(0, this.hp / this.maxHp);
     const color = ratio > 0.5 ? 0x44ff44 : ratio > 0.25 ? 0xffaa00 : 0xff2222;
     this.hpBar.fillStyle(color, 1);
     this.hpBar.fillRect(bx, by, barW * ratio, barH);
@@ -1167,8 +1349,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   private updateHpBar() {
+    // Throttle HP bar redraws: only update every 3rd call
+    if (!this._hpBarFrame) this._hpBarFrame = 0;
+    this._hpBarFrame++;
+    if (this._hpBarFrame % 3 !== 0) return;
     this.drawHpBar();
   }
+
+  private _hpBarFrame: number = 0;
 
   override destroy(fromScene?: boolean): void {
     this.hpBar?.destroy();

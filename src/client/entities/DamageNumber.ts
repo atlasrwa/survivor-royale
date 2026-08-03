@@ -8,14 +8,24 @@ export interface DamageNumberConfig {
   isHeal?: boolean;    // lifesteal healing
 }
 
+// Performance: limit active damage numbers on screen
+let activeDamageNumbers = 0;
+const MAX_DAMAGE_NUMBERS = 30;
+
 /**
  * DamageNumber - floating text that appears on hit, drifts up, and fades out.
+ * Throttled: skips small damage numbers when too many are active.
  */
 export class DamageNumber {
-  private text: Phaser.GameObjects.Text;
+  private text: Phaser.GameObjects.Text | null = null;
 
   constructor(scene: Phaser.Scene, config: DamageNumberConfig) {
     const { x, y, damage, isCrit, isHeal } = config;
+
+    // Performance: skip non-crit small damage numbers when at capacity
+    if (activeDamageNumbers >= MAX_DAMAGE_NUMBERS && !isCrit && !isHeal) {
+      return;
+    }
     
     // Color based on type
     let color = '#ffffff';
@@ -41,6 +51,8 @@ export class DamageNumber {
       strokeThickness: 3,
     }).setOrigin(0.5).setDepth(200);
 
+    activeDamageNumbers++;
+
     // Random horizontal offset for variety
     const offsetX = Phaser.Math.Between(-15, 15);
 
@@ -54,7 +66,8 @@ export class DamageNumber {
       duration: isCrit ? 900 : 700,
       ease: 'Power2',
       onComplete: () => {
-        this.text.destroy();
+        this.text?.destroy();
+        activeDamageNumbers--;
       },
     });
   }

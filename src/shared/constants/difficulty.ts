@@ -60,7 +60,7 @@ export const DIFFICULTY_TIERS: Record<DifficultyTier, DifficultyModifiers> = {
     enemyMixOffset: 0,
     enemyCountMultiplier: 1.0,
     xpDropMultiplier: 1.0,
-    healingMultiplier: 1.0,
+    healingMultiplier: 0.7,
     scoreMultiplier: 1.0,
   },
   hard: {
@@ -76,7 +76,7 @@ export const DIFFICULTY_TIERS: Record<DifficultyTier, DifficultyModifiers> = {
     enemyMixOffset: 3,
     enemyCountMultiplier: 1.2,
     xpDropMultiplier: 0.7,
-    healingMultiplier: 0.8,
+    healingMultiplier: 0.5,
     scoreMultiplier: 2.0,
   },
   nightmare: {
@@ -92,7 +92,7 @@ export const DIFFICULTY_TIERS: Record<DifficultyTier, DifficultyModifiers> = {
     enemyMixOffset: 10,
     enemyCountMultiplier: 1.4,
     xpDropMultiplier: 0.5,
-    healingMultiplier: 0.6,
+    healingMultiplier: 0.35,
     scoreMultiplier: 4.0,
   },
 };

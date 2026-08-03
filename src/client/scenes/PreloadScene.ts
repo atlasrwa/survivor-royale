@@ -114,10 +114,60 @@ export class PreloadScene extends Phaser.Scene {
             gfx.fillTriangle(size / 2, 2, 2, size / 2, size / 2, size - 2);
             gfx.fillTriangle(size / 2, 2, size - 2, size / 2, size / 2, size - 2);
             break;
-          case 'boss_titan':
+          case 'flyer':
+            // Small diamond/rhombus shape (fast, aerial)
+            gfx.fillTriangle(size / 2, 2, 2, size / 2, size / 2, size - 2);
+            gfx.fillTriangle(size / 2, 2, size - 2, size / 2, size / 2, size - 2);
+            // Inner highlight to distinguish from exploder
+            gfx.fillStyle(0xffffff, 0.3);
+            gfx.fillTriangle(size / 2, size / 4, size / 4, size / 2, size * 3 / 4, size / 2);
+            break;
+          case 'splitter':
+            // Circle with inner horizontal line (splits into pieces)
+            gfx.fillCircle(size / 2, size / 2, size / 2 - 1);
+            gfx.lineStyle(2, 0xffffff, 0.6);
+            gfx.lineBetween(size / 4, size / 2, size * 3 / 4, size / 2);
+            break;
+          case 'shielder':
+            // Rectangle body with front shield arc
+            gfx.fillRect(size / 4, size / 4, size / 2, size / 2);
+            // Shield arc on the front (top)
+            gfx.lineStyle(3, 0xffffff, 0.8);
+            gfx.beginPath();
+            gfx.arc(size / 2, size / 4, size / 3, Math.PI, 0, false);
+            gfx.strokePath();
+            break;
+          case 'healer':
+            // Circle with cross/plus symbol
+            gfx.fillCircle(size / 2, size / 2, size / 2 - 1);
+            // Cross/plus
+            gfx.fillStyle(0xffffff, 0.8);
+            gfx.fillRect(size / 2 - 2, size / 4, 4, size / 2);
+            gfx.fillRect(size / 4, size / 2 - 2, size / 2, 4);
+            break;
+          case 'boss_goblin_king':
             gfx.fillRect(2, 2, size - 4, size - 4);
-            gfx.fillStyle(0xff0000, 0.5);
-            gfx.fillCircle(size / 2, size / 2, size / 4);
+            gfx.fillStyle(0xffcc00, 0.7);
+            // Crown shape
+            gfx.fillTriangle(size / 4, size / 2, size / 2, size / 5, size * 3 / 4, size / 2);
+            gfx.fillRect(size / 4, size / 2, size / 2, size / 3);
+            break;
+          case 'boss_hydra':
+            // Large octagon/circle with 3 dots (multi-headed)
+            gfx.fillCircle(size / 2, size / 2, size / 2 - 2);
+            // Three dots representing multiple heads
+            gfx.fillStyle(0xffffff, 0.8);
+            gfx.fillCircle(size / 4, size / 3, size / 10);
+            gfx.fillCircle(size / 2, size / 4, size / 10);
+            gfx.fillCircle(size * 3 / 4, size / 3, size / 10);
+            break;
+          case 'boss_lich':
+            // Large diamond with inner circle (magical boss)
+            gfx.fillTriangle(size / 2, 2, 2, size / 2, size / 2, size - 2);
+            gfx.fillTriangle(size / 2, 2, size - 2, size / 2, size / 2, size - 2);
+            // Inner magical circle
+            gfx.fillStyle(0xffffff, 0.4);
+            gfx.fillCircle(size / 2, size / 2, size / 5);
             break;
         }
 
@@ -169,14 +219,73 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   private generateArenaTexture() {
-    // Grid tile for the arena floor
+    // Grasslands / meadow tile for the arena floor
     if (!this.textures.exists('arena_tile')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      gfx.fillStyle(0x111122, 1);
-      gfx.fillRect(0, 0, 64, 64);
-      gfx.lineStyle(1, 0x1a1a33, 1);
-      gfx.strokeRect(0, 0, 64, 64);
-      gfx.generateTexture('arena_tile', 64, 64);
+      const size = 64;
+
+      // Base grass color (varied greens)
+      gfx.fillStyle(0x3a7d2e, 1);
+      gfx.fillRect(0, 0, size, size);
+
+      // Slightly darker patches for depth
+      gfx.fillStyle(0x2d6b23, 0.5);
+      gfx.fillRect(10, 5, 20, 12);
+      gfx.fillRect(40, 35, 18, 14);
+
+      // Lighter grass highlights
+      gfx.fillStyle(0x4a9d3e, 0.6);
+      gfx.fillRect(0, 30, 15, 10);
+      gfx.fillRect(35, 10, 12, 8);
+
+      // Small grass blade lines
+      gfx.lineStyle(1, 0x5aad4e, 0.4);
+      for (let i = 0; i < 8; i++) {
+        const bx = (i * 8 + 3) % size;
+        const by = (i * 11 + 7) % size;
+        gfx.beginPath();
+        gfx.moveTo(bx, by + 4);
+        gfx.lineTo(bx + 1, by);
+        gfx.strokePath();
+      }
+
+      // Subtle grid line (dirt path between tiles)
+      gfx.lineStyle(1, 0x5c4a2a, 0.15);
+      gfx.strokeRect(0, 0, size, size);
+
+      gfx.generateTexture('arena_tile', size, size);
+      gfx.destroy();
+    }
+
+    // Flower decoration texture (small)
+    if (!this.textures.exists('flower_deco')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      // Random flower colors
+      const colors = [0xff6688, 0xffdd44, 0xffffff, 0xaa88ff, 0xff8844];
+      const color = colors[Math.floor(Math.random() * colors.length)]!;
+      // Petals
+      gfx.fillStyle(color, 0.8);
+      gfx.fillCircle(5, 3, 3);
+      gfx.fillCircle(9, 5, 3);
+      gfx.fillCircle(5, 9, 3);
+      gfx.fillCircle(1, 5, 3);
+      // Center
+      gfx.fillStyle(0xffee00, 1);
+      gfx.fillCircle(5, 5, 2);
+      gfx.generateTexture('flower_deco', 12, 12);
+      gfx.destroy();
+    }
+
+    // Grass tuft decoration
+    if (!this.textures.exists('grass_tuft')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.lineStyle(2, 0x4aad3e, 0.7);
+      gfx.beginPath();
+      gfx.moveTo(4, 12); gfx.lineTo(3, 2);
+      gfx.moveTo(7, 12); gfx.lineTo(8, 0);
+      gfx.moveTo(10, 12); gfx.lineTo(12, 3);
+      gfx.strokePath();
+      gfx.generateTexture('grass_tuft', 14, 14);
       gfx.destroy();
     }
   }

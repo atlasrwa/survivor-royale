@@ -4,6 +4,11 @@ import { Enemy } from './Enemy';
 import { DamageNumber } from './DamageNumber';
 import { playSound } from '@/client/utils/SoundManager';
 
+/** Typed projectile with damage property for ability arrows */
+interface AbilityProjectile extends Phaser.Physics.Arcade.Image {
+  damage: number;
+}
+
 /**
  * AbilitySystem — handles hero Q (active) and E (ultimate) abilities.
  * Each hero has a unique active + ultimate. Cooldowns shown in HUD.
@@ -65,11 +70,19 @@ export class AbilitySystem {
     if (this.activeCooldown > 0) this.activeCooldown -= delta;
     if (this.ultimateCooldown > 0) this.ultimateCooldown -= delta;
 
-    if (this.qKey && Phaser.Input.Keyboard.JustDown(this.qKey) && this.activeCooldown <= 0) {
+    // Keyboard input
+    const qPressed = this.qKey && Phaser.Input.Keyboard.JustDown(this.qKey);
+    const ePressed = this.eKey && Phaser.Input.Keyboard.JustDown(this.eKey);
+
+    // Touch input fallback
+    const touchScene = this.scene.scene.get('TouchControls') as any;
+    const touchQ = touchScene?.activeAbilityPressed ?? false;
+    const touchE = touchScene?.ultimatePressed ?? false;
+
+    if ((qPressed || touchQ) && this.activeCooldown <= 0) {
       this.fireActive(enemies);
     }
-    if (this.eKey && Phaser.Input.Keyboard.JustDown(this.eKey) &&
-        this.ultimateCooldown <= 0 && this.ultimateCharge >= this.ULTIMATE_CHARGE_NEEDED) {
+    if ((ePressed || touchE) && this.ultimateCooldown <= 0 && this.ultimateCharge >= this.ULTIMATE_CHARGE_NEEDED) {
       this.fireUltimate(enemies);
     }
   }
@@ -86,7 +99,9 @@ export class AbilitySystem {
   // ── Active abilities (Q) ─────────────────────────────────────────────────
 
   private fireActive(enemies: Phaser.Physics.Arcade.Group) {
-    this.activeCooldown = this.ACTIVE_MAX;
+    // Apply cooldown reduction from skill tree
+    const cdReduction = 1 - this.player.abilityCooldownReduction;
+    this.activeCooldown = this.ACTIVE_MAX * Math.max(0.2, cdReduction);
     playSound('abilityActivate');
 
     switch (this.player.heroId) {
@@ -143,7 +158,7 @@ export class AbilitySystem {
       // Destroy after 600ms
       this.scene.time.delayedCall(600, () => { if (arrow.active) arrow.destroy(); });
 
-      (arrow as any).damage = this.player.attackDamage * 1.5;
+      (arrow as AbilityProjectile).damage = this.player.attackDamage * 1.5;
       this.abilityProjectiles.add(arrow);
     }
 
@@ -186,12 +201,11 @@ export class AbilitySystem {
         if (e.active) {
           new DamageNumber(this.scene, { x: e.x, y: e.y, damage: DAMAGE, isCrit: true });
         }
-        // Slow: temporarily reduce speed via tint + body velocity cap
+        // Apply slow through proper status effect system
+        e.applySlowEffect(0.3, 2000);
         e.setTint(0xaaddff);
-        const origSpeed = e.speed;
-        e.speed *= 0.3;
         this.scene.time.delayedCall(2000, () => {
-          if (e.active) { e.speed = origSpeed; e.clearTint(); }
+          if (e.active) { e.clearTint(); }
         });
       }
     });
@@ -219,18 +233,46 @@ export class AbilitySystem {
     this.player.setScale(1.5);
     this.player.attackDamage *= 2.5;
     // Grant invincibility for duration
-    (this.player as unknown as Record<string, unknown>)['isInvincible'] = true;
+    this.player.setInvincible(true);
 
     this.showAbilityText('⚡ TITAN FORM!', 0x4488ff);
     this.scene.cameras.main.flash(300, 100, 150, 255, false);
 
+    // Visual countdown (6, 5, 4, 3, 2, 1)
+    const countdownText = this.scene.add
+      .text(this.player.x, this.player.y - 90, '6', {
+        fontSize: '20px', color: '#4488ff', fontStyle: 'bold',
+        stroke: '#000000', strokeThickness: 3,
+      })
+      .setOrigin(0.5).setDepth(251).setScrollFactor(1);
+
+    let secondsLeft = 5;
+    const countdownTimer = this.scene.time.addEvent({
+      delay: 1000,
+      repeat: 5,
+      callback: () => {
+        if (secondsLeft >= 1 && countdownText.active) {
+          countdownText.setText(String(secondsLeft));
+          countdownText.setPosition(this.player.x, this.player.y - 90);
+        }
+        secondsLeft--;
+      },
+    });
+
+    // Store reference for cleanup
+    const titanCountdownRef = { text: countdownText, timer: countdownTimer };
+
     this.scene.time.delayedCall(6000, () => {
+      // Clean up countdown
+      titanCountdownRef.text?.destroy();
+      titanCountdownRef.timer?.destroy();
+
       if (this.player.active) {
         this.player.clearTint();
         this.player.setScale(1);
         // Restore by dividing instead of storing absolute — preserves level-up bonuses gained during Titan Form
         this.player.attackDamage = this.player.attackDamage / 2.5;
-        (this.player as unknown as Record<string, unknown>)['isInvincible'] = false;
+        this.player.setInvincible(false);
       }
     });
   }
@@ -252,7 +294,7 @@ export class AbilitySystem {
         const arrow = this.scene.physics.add.image(this.player.x, this.player.y, 'projectile_arrow');
         arrow.setDepth(8).setRotation(angle);
         (arrow.body as Phaser.Physics.Arcade.Body).setVelocity(Math.cos(angle) * 750, Math.sin(angle) * 750);
-        (arrow as any).damage = this.player.attackDamage;
+        (arrow as AbilityProjectile).damage = this.player.attackDamage;
         this.abilityProjectiles.add(arrow);
         this.scene.time.delayedCall(800, () => { if (arrow.active) arrow.destroy(); });
       },
@@ -284,9 +326,9 @@ export class AbilitySystem {
         const e = obj as Enemy;
         if (!e.active) return;
         const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, e.x, e.y);
-        e.takeDamage(this.player.attackDamage * 8, angle, 350);
+        e.takeDamage(this.player.attackDamage * 3, angle, 350);
         if (e.active) {
-          new DamageNumber(this.scene, { x: e.x, y: e.y, damage: this.player.attackDamage * 8, isCrit: true });
+          new DamageNumber(this.scene, { x: e.x, y: e.y, damage: this.player.attackDamage * 3, isCrit: true });
         }
       });
     });

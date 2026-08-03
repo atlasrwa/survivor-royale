@@ -28,7 +28,5 @@ const Home: NextPage = () => {
   );
 };
 
-// Disable static generation — this page is purely client-rendered (Phaser game)
-export const getServerSideProps = async () => ({ props: {} });
-
+// Static export: purely client-rendered (Phaser game)
 export default Home;

@@ -8,10 +8,13 @@ interface LevelUpData {
 
 /**
  * LevelUpOverlay - modal scene that pauses the game and shows 3 upgrade choices.
+ * Supports keyboard shortcuts (1/2/3) and graceful dismiss when no upgrades available.
  */
 export class LevelUpOverlay extends Phaser.Scene {
   private onSelect?: (upgradeId: UpgradeId) => void;
   private hasSelected: boolean = false;
+  private keyboardKeys: Phaser.Input.Keyboard.Key[] = [];
+  private choices: UpgradeId[] = [];
 
   constructor() {
     super({ key: 'LevelUpOverlay' });
@@ -19,6 +22,9 @@ export class LevelUpOverlay extends Phaser.Scene {
 
   create(data: LevelUpData) {
     this.hasSelected = false;
+    this.choices = [];
+    this.keyboardKeys = [];
+
     const { width, height } = this.scale;
     const cx = width / 2;
 
@@ -44,19 +50,87 @@ export class LevelUpOverlay extends Phaser.Scene {
       .setOrigin(0.5);
 
     // Roll 3 upgrades
-    const choices = rollUpgrades(data.ownedUpgrades, 3);
+    this.choices = rollUpgrades(data.ownedUpgrades, 3);
 
-    // Create upgrade cards
-    const cardSpacing = 280;
-    const startX = cx - (choices.length - 1) * cardSpacing / 2;
+    if (this.choices.length === 0) {
+      // No upgrades available - show continue button
+      this.add
+        .text(cx, 300, 'No upgrades available', {
+          fontSize: '28px',
+          color: '#778899',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5);
 
-    choices.forEach((upgradeId, i) => {
-      const def = UPGRADE_DEFINITIONS[upgradeId];
-      const stacks = data.ownedUpgrades[upgradeId] ?? 0;
-      this.createUpgradeCard(startX + i * cardSpacing, 320, def, stacks, () => {
-        this.selectUpgrade(upgradeId);
+      const btnBg = this.add
+        .rectangle(cx, 400, 300, 60, 0x334455)
+        .setStrokeStyle(3, 0x4488ff)
+        .setInteractive({ useHandCursor: true });
+
+      this.add
+        .text(cx, 400, 'CONTINUE', {
+          fontSize: '24px',
+          color: '#ffffff',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5);
+
+      btnBg.on('pointerover', () => {
+        btnBg.setStrokeStyle(4, 0xffffff);
       });
-    });
+      btnBg.on('pointerout', () => {
+        btnBg.setStrokeStyle(3, 0x4488ff);
+      });
+      btnBg.on('pointerdown', () => {
+        this.dismiss();
+      });
+
+      // Also allow any key to dismiss
+      const kb = this.input.keyboard;
+      if (kb) {
+        const anyKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        anyKey.once('down', () => this.dismiss());
+        const enterKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+        enterKey.once('down', () => this.dismiss());
+        const oneKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
+        oneKey.once('down', () => this.dismiss());
+      }
+    } else {
+      // Create upgrade cards
+      const cardSpacing = 280;
+      const startX = cx - (this.choices.length - 1) * cardSpacing / 2;
+
+      this.choices.forEach((upgradeId, i) => {
+        const def = UPGRADE_DEFINITIONS[upgradeId];
+        const stacks = data.ownedUpgrades[upgradeId] ?? 0;
+        this.createUpgradeCard(startX + i * cardSpacing, 320, def, stacks, i + 1, () => {
+          this.selectUpgrade(upgradeId);
+        });
+      });
+
+      // Keyboard shortcuts: 1, 2, 3
+      const kb = this.input.keyboard;
+      if (kb) {
+        const keyCodes = [
+          Phaser.Input.Keyboard.KeyCodes.ONE,
+          Phaser.Input.Keyboard.KeyCodes.TWO,
+          Phaser.Input.Keyboard.KeyCodes.THREE,
+        ];
+
+        keyCodes.forEach((keyCode, i) => {
+          if (i < this.choices.length) {
+            const key = kb.addKey(keyCode);
+            key.once('down', () => {
+              const choice = this.choices[i];
+              if (choice !== undefined) {
+                this.selectUpgrade(choice);
+              }
+            });
+            this.keyboardKeys.push(key);
+          }
+        });
+      }
+    }
 
     // Fade in
     this.cameras.main.fadeIn(200, 0, 0, 0);
@@ -67,6 +141,7 @@ export class LevelUpOverlay extends Phaser.Scene {
     y: number,
     def: { name: string; description: string; color: number; maxStacks: number },
     currentStacks: number,
+    index: number,
     onClick: () => void
   ) {
     const container = this.add.container(x, y);
@@ -77,6 +152,15 @@ export class LevelUpOverlay extends Phaser.Scene {
     const bg = this.add
       .rectangle(0, 0, cardW, cardH, 0x1a1a2a)
       .setStrokeStyle(3, def.color);
+
+    // Keyboard shortcut hint
+    const shortcutText = this.add
+      .text(-cardW / 2 + 12, -cardH / 2 + 8, `[${index}]`, {
+        fontSize: '14px',
+        color: '#ffcc44',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0, 0);
 
     // Name
     const nameText = this.add
@@ -128,7 +212,7 @@ export class LevelUpOverlay extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    container.add([bg, nameText, descText, stackText, barBg, barFill, btnBg, btnText]);
+    container.add([bg, shortcutText, nameText, descText, stackText, barBg, barFill, btnBg, btnText]);
 
     // Interactivity
     bg.setInteractive({ useHandCursor: true });
@@ -158,6 +242,20 @@ export class LevelUpOverlay extends Phaser.Scene {
     this.cameras.main.fadeOut(150, 0, 0, 0);
     this.time.delayedCall(150, () => {
       this.onSelect?.(upgradeId);
+      this.scene.stop();
+    });
+  }
+
+  /**
+   * Dismiss the overlay without selecting an upgrade.
+   * Used when no upgrades are available.
+   */
+  private dismiss() {
+    if (this.hasSelected) return;
+    this.hasSelected = true;
+
+    this.cameras.main.fadeOut(150, 0, 0, 0);
+    this.time.delayedCall(150, () => {
       this.scene.stop();
     });
   }

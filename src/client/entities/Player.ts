@@ -24,6 +24,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   maxHp: number;
   hp: number;
   speed: number;
+  private readonly baseSpeed: number;
   defense: number;
   attackDamage: number;
   attackSpeed: number;
@@ -57,6 +58,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   chainLightning: number = 0;       // attacks chain to N extra enemies
   stunOnCrit: boolean = false;      // crits stun enemy briefly
 
+  // Skill tree bonus stats
+  skillTreeMultishot: number = 0;       // extra arrows from skill tree (Archer)
+  abilityCooldownReduction: number = 0; // fraction reduction for Q/E cooldowns (Mage)
+  meleeLifestealBonus: number = 0;      // extra % max HP healed per melee hit (Knight)
+
   // Dodge state
   isDodging: boolean = false;
   private dodgeCooldown: number;
@@ -66,8 +72,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private dodgeCooldownTimer: number = 0;
   private dodgeVelocity: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0);
 
+  // Perfect dodge: triggered when dodging through an attack
+  isPerfectDodgeActive: boolean = false;
+  private perfectDodgeTimer: number = 0;
+  private readonly PERFECT_DODGE_WINDOW = 150; // ms window at start of dodge for "perfect"
+  private readonly PERFECT_DODGE_BONUS_DURATION = 1500; // 1.5s of bonus after perfect dodge
+  private perfectDodgeElapsed: number = 0; // time since dodge started (to check window)
+
+  // Manual aim override (right-click hold)
+  manualAimActive: boolean = false;
+  manualAimAngle: number = 0;
+
   // Hit flash
-  private isInvincible: boolean = false;
+  isInvincible: boolean = false;
   private invincibilityTimer: number = 0;
   private readonly INVINCIBILITY_DURATION = 500; // ms after taking damage
 
@@ -108,6 +125,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.maxHp = def.baseStats.maxHp;
     this.hp = def.baseStats.hp;
     this.speed = def.baseStats.speed;
+    this.baseSpeed = def.baseStats.speed;
     this.defense = def.baseStats.defense;
     this.attackDamage = def.baseStats.attackDamage;
     this.attackSpeed = def.baseStats.attackSpeed;
@@ -118,9 +136,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Physics body setup
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setCircle(14, 2, 2);
+    body.setCircle(18, 0, 0);
     body.setMaxVelocity(600, 600);
     this.setDepth(10);
+    this.setScale(1.3);
+
+    // Hero-specific innate bonuses (identity passives)
+    this.applyHeroPassives();
 
     // Apply skill tree effects from saved unlocks
     this.applySkillTreeEffects();
@@ -141,6 +163,54 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       right: kb.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
     this.spaceKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Right-click hold for manual aim
+    this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.rightButtonDown()) {
+        this.manualAimActive = true;
+      }
+    });
+    this.scene.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.rightButtonDown()) {
+        this.manualAimActive = false;
+      }
+    });
+    this.scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (this.manualAimActive) {
+        const worldPoint = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        this.manualAimAngle = Phaser.Math.Angle.Between(this.x, this.y, worldPoint.x, worldPoint.y);
+      }
+    });
+    // Prevent context menu on right-click
+    this.scene.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  // ── Hero identity passives ────────────────────────────────────────────
+  /** Mage splash radius (0 = no splash). Splash deals 50% damage to nearby enemies. */
+  splashRadius: number = 0;
+  splashDamageRatio: number = 0;
+
+  /**
+   * Apply innate hero passives that define each hero's identity:
+   * - Knight: no special passive (identity is raw tankiness + AoE sweep)
+   * - Archer: innate 15% crit chance + 50% crit damage bonus (rewards rapid fire)
+   * - Mage: splash damage on every hit (60px radius, 50% damage to nearby)
+   */
+  private applyHeroPassives() {
+    switch (this.heroId) {
+      case 'archer':
+        this.critChance = 0.15;          // 15% innate crit
+        this.critDamageBonus = 0.5;      // Crits deal 200% (1.5 + 0.5)
+        break;
+      case 'mage':
+        this.splashRadius = 60;          // Every hit splashes in 60px
+        this.splashDamageRatio = 0.5;    // Splash deals 50% of hit damage
+        break;
+      case 'knight':
+        // Knight passive: innate lifesteal on melee (heals 3% max HP per hit)
+        // Implemented in WeaponSystem melee sweep
+        break;
+    }
   }
 
   /**
@@ -187,6 +257,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
         // Pierce bonus from Sniper tree
         if (fx.pierce) this.infinitePiercing = true;
+
+        // Archer: bonus multishot from skill tree
+        if (fx.multishot) this.skillTreeMultishot += fx.multishot;
+
+        // Mage: ability cooldown reduction
+        if (fx.abilityCooldown) this.abilityCooldownReduction += Math.abs(fx.abilityCooldown);
+
+        // Mage: splash bonuses
+        if (fx.splashRadius) this.splashRadius = Math.floor(this.splashRadius * (1 + fx.splashRadius));
+        if (fx.splashDamage) this.splashDamageRatio += fx.splashDamage;
+
+        // Knight: enhanced melee lifesteal
+        if (fx.meleLifesteal) this.meleeLifestealBonus += fx.meleLifesteal;
+
+        // Knight: auto-revive
+        if (fx.autoRevive) this.hasAutoRevive = true;
       }
     }
   }
@@ -218,16 +304,44 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.setAlpha(1);
       }
     }
+    // Perfect dodge bonus timer
+    if (this.perfectDodgeTimer > 0) {
+      this.perfectDodgeTimer -= delta;
+      if (this.perfectDodgeTimer <= 0) {
+        this.isPerfectDodgeActive = false;
+      }
+    }
   }
 
   private updateMovement() {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const moveDir = new Phaser.Math.Vector2(0, 0);
 
+    // Keyboard input
     if (this.cursors.left.isDown || this.wasdKeys.left.isDown) moveDir.x -= 1;
     if (this.cursors.right.isDown || this.wasdKeys.right.isDown) moveDir.x += 1;
     if (this.cursors.up.isDown || this.wasdKeys.up.isDown) moveDir.y -= 1;
     if (this.cursors.down.isDown || this.wasdKeys.down.isDown) moveDir.y += 1;
+
+    // Touch controls fallback (virtual joystick)
+    if (moveDir.length() === 0) {
+      const touchScene = this.scene.scene.get('TouchControls') as any;
+      if (touchScene?.moveVector && (touchScene.moveVector.x !== 0 || touchScene.moveVector.y !== 0)) {
+        moveDir.set(touchScene.moveVector.x, touchScene.moveVector.y);
+      }
+    }
+
+    // Touch: dodge button
+    const touchScene = this.scene.scene.get('TouchControls') as any;
+    if (touchScene?.dodgePressed && this.dodgeCooldownTimer <= 0 && !this.isDodging) {
+      this.startDodge();
+    }
+
+    // Touch: manual aim
+    if (touchScene?.manualAimActive) {
+      this.manualAimActive = true;
+      this.manualAimAngle = touchScene.manualAimAngle;
+    }
 
     if (moveDir.length() > 0) {
       moveDir.normalize();
@@ -253,9 +367,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.isInvincible = true;
     this.dodgeTimer = this.dodgeDuration;
     this.dodgeCooldownTimer = this.dodgeCooldown;
+    this.perfectDodgeElapsed = 0; // reset perfect dodge window tracker
 
-    // Dodge in facing direction
-    this.dodgeVelocity.set(this.facing.x * this.dodgeSpeed, this.facing.y * this.dodgeSpeed);
+    // Dodge in movement input direction; fall back to facing if no input
+    const moveDir = new Phaser.Math.Vector2(0, 0);
+    if (this.cursors.left.isDown || this.wasdKeys.left.isDown) moveDir.x -= 1;
+    if (this.cursors.right.isDown || this.wasdKeys.right.isDown) moveDir.x += 1;
+    if (this.cursors.up.isDown || this.wasdKeys.up.isDown) moveDir.y -= 1;
+    if (this.cursors.down.isDown || this.wasdKeys.down.isDown) moveDir.y += 1;
+
+    if (moveDir.length() > 0) {
+      moveDir.normalize();
+    } else {
+      moveDir.set(this.facing.x, this.facing.y);
+    }
+
+    this.dodgeVelocity.set(moveDir.x * this.dodgeSpeed, moveDir.y * this.dodgeSpeed);
 
     // Visual feedback
     this.setAlpha(0.5);
@@ -263,6 +390,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private updateDodge(delta: number) {
     this.dodgeTimer -= delta;
+    this.perfectDodgeElapsed += delta;
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setVelocity(this.dodgeVelocity.x, this.dodgeVelocity.y);
 
@@ -297,10 +425,62 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  takeDamage(amount: number, source: string = 'Unknown'): boolean {
-    if (this.isInvincible || this.isDodging || this.hp <= 0) return false;
+  /**
+   * Perfect dodge: grants 1.5s of double damage when dodging through an attack
+   * within the first 150ms of the dodge.
+   */
+  private triggerPerfectDodge() {
+    this.isPerfectDodgeActive = true;
+    this.perfectDodgeTimer = this.PERFECT_DODGE_BONUS_DURATION;
+    playSound('comboHit', { pitch: 2.0 });
 
-    const actual = Math.max(1, amount - this.defense);
+    // Visual feedback: gold flash + floating text
+    this.setTint(0xffdd00);
+    this.scene.time.delayedCall(200, () => {
+      if (this.active && !this.isPerfectDodgeActive) this.clearTint();
+    });
+
+    const txt = this.scene.add
+      .text(this.x, this.y - 50, '✨ PERFECT DODGE!', {
+        fontSize: '18px', color: '#ffdd00',
+        fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
+      })
+      .setOrigin(0.5).setDepth(200);
+
+    this.scene.tweens.add({
+      targets: txt, y: this.y - 100, alpha: 0,
+      duration: 1200, ease: 'Power2',
+      onComplete: () => txt.destroy(),
+    });
+  }
+
+  /** Damage multiplier including perfect dodge bonus and adrenaline */
+  get damageMultiplier(): number {
+    let mult = this.isPerfectDodgeActive ? 2.0 : 1.0;
+    // Adrenaline: +1% damage per 1% missing HP
+    if ((this.upgrades['adrenaline'] ?? 0) > 0) {
+      const missingHpPercent = 1 - (this.hp / this.maxHp);
+      mult *= (1 + missingHpPercent);
+    }
+    return mult;
+  }
+
+  takeDamage(amount: number, source: string = 'Unknown'): boolean {
+    if (this.hp <= 0) return false;
+
+    // Perfect dodge: if we're dodging and within the early window, trigger bonus
+    if (this.isDodging) {
+      if (this.perfectDodgeElapsed <= this.PERFECT_DODGE_WINDOW && !this.isPerfectDodgeActive) {
+        this.triggerPerfectDodge();
+      }
+      return false;
+    }
+
+    if (this.isInvincible) return false;
+
+    // Defense is now percentage-based: defense stat = % damage reduction (capped at 75%)
+    const reductionPercent = Math.min(this.defense, 75) / 100;
+    const actual = Math.max(1, Math.floor(amount * (1 - reductionPercent)));
     this.hp = Math.max(0, this.hp - actual);
     playSound('playerHit');
 
@@ -346,12 +526,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private applyLevelUpBonus() {
-    // Each level: +5% all stats, +10% HP (healed)
-    this.maxHp = Math.floor(this.maxHp * 1.1);
-    this.hp = Math.min(this.maxHp, this.hp + Math.floor(this.maxHp * 0.3));
-    this.speed *= 1.03;
-    this.attackDamage *= 1.08;
-    this.defense = Math.floor(this.defense * 1.05) + 1;
+    // Flattened power curve: smaller per-level bonuses keep late-game challenging
+    this.maxHp = Math.floor(this.maxHp * 1.05); // was 1.1
+    this.hp = Math.min(this.maxHp, this.hp + Math.floor(this.maxHp * 0.2));
+    this.speed *= 1.01; // was 1.03
+    this.speed = Math.min(this.speed, this.baseSpeed * 1.5); // cap lower
+    this.attackDamage *= 1.05; // was 1.08
+    const baseDef = HERO_DEFINITIONS[this.heroId];
+    if (baseDef) {
+      this.attackDamage = Math.min(this.attackDamage, baseDef.baseStats.attackDamage * 4);
+    }
+    // No auto defense gain — player must pick defense upgrades intentionally
   }
 
   /** Multiplier for all healing received (set by difficulty tier) */
@@ -360,6 +545,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   heal(amount: number) {
     const effective = Math.floor(amount * this.healingMultiplier);
     this.hp = Math.min(this.maxHp, this.hp + effective);
+  }
+
+  /** Set invincibility state (used by AbilitySystem for Titan Form) */
+  setInvincible(value: boolean) {
+    this.isInvincible = value;
+    if (!value) {
+      this.invincibilityTimer = 0;
+    }
   }
 
   /** Apply an upgrade selected from the level-up screen */
@@ -376,13 +569,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         break;
       case 'move_speed':
         this.speed *= 1.1;
+        this.speed = Math.min(this.speed, this.baseSpeed * 2);
         break;
       case 'max_hp':
         this.maxHp = Math.floor(this.maxHp * 1.25);
         this.hp = Math.min(this.maxHp, this.hp + Math.floor(this.maxHp * 0.2));
         break;
       case 'defense':
-        this.defense += 5;
+        this.defense = Math.min(75, this.defense + 4); // +4 percentage points, capped at 75%
         break;
       case 'dodge_cd':
         this.dodgeCooldown *= 0.8;
@@ -391,7 +585,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'lifesteal':
       case 'knockback':
       case 'multishot':
-        // These are applied in WeaponSystem
+      case 'chain_shot':
+      case 'orbit_shield':
+      case 'magnetic':
+        // These are applied in WeaponSystem / XpOrb logic
+        break;
+      case 'adrenaline':
+        // Flag-based: damage scales with missing HP (applied in WeaponSystem)
+        break;
+      case 'glass_cannon':
+        // +50% damage, -30% max HP
+        this.attackDamage *= 1.5;
+        const hpLoss = Math.floor(this.maxHp * 0.3);
+        this.maxHp -= hpLoss;
+        this.hp = Math.min(this.hp, this.maxHp);
         break;
     }
   }
@@ -407,7 +614,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.attackSpeed *= 1.5;
         break;
       case 'phantom_rush':
-        this.dodgeCooldown = 50;
+        this.dodgeCooldown = 300;
         break;
       case 'immortal_guard':
         this.hasAutoRevive = true;

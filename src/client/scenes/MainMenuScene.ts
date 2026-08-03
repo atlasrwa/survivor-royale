@@ -157,7 +157,7 @@ export class MainMenuScene extends Phaser.Scene {
     // Settings button
     this.createButton(cx, 720, 'SETTINGS', 0x334466, () => {
       this.scene.launch('SettingsScene');
-    });
+    }, false);
 
     // Skill Trees button
     this.createButton(cx, 780, 'SKILL TREES', 0x443366, () => {
@@ -310,7 +310,8 @@ export class MainMenuScene extends Phaser.Scene {
     y: number,
     label: string,
     color: number,
-    onClick: () => void
+    onClick: () => void,
+    fadeOnClick: boolean = true
   ): Phaser.GameObjects.Container {
     const container = this.add.container(x, y);
     const bg = this.add.rectangle(0, 0, 240, 56, color).setStrokeStyle(2, 0xffffff);
@@ -335,8 +336,12 @@ export class MainMenuScene extends Phaser.Scene {
     });
     bg.on('pointerdown', () => {
       playSound('uiClick');
-      this.cameras.main.fadeOut(300, 0, 0, 0);
-      this.time.delayedCall(300, onClick);
+      if (fadeOnClick) {
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.time.delayedCall(300, onClick);
+      } else {
+        onClick();
+      }
     });
 
     return container;

@@ -121,7 +121,7 @@
 | Splitter | Green | `#44ff88` |
 | Shielder | Blue | `#4466ff` |
 | Healer | Bright green | `#66ff66` |
-| Boss Titan | Dark crimson | `#882222` |
+| Boss King Goblin | Dark green | `#44aa22` |
 | Boss Hydra | Forest green | `#228844` |
 | Boss Lich | Dark violet | `#6622aa` |
 
@@ -143,7 +143,7 @@
 - **Format:** PNG, 32-bit RGBA (transparency)
 - **Layout:** Horizontal strip (frames left-to-right, single row)
 - **Naming:** `{entity}_{animation}_{frames}f.png`
-- **Examples:** `knight_idle_4f.png`, `walker_walk_4f.png`, `boss_titan_death_6f.png`
+- **Examples:** `knight_idle_4f.png`, `walker_walk_4f.png`, `boss_goblin_king_death_6f.png`
 - **No padding between frames**
 - **Each frame is exactly the documented pixel size**
 - **Background:** Fully transparent (alpha = 0)
@@ -289,7 +289,7 @@ These keys are hardcoded in game logic. Generated assets must map to these exact
 hero_knight, hero_archer, hero_mage
 enemy_walker, enemy_runner, enemy_tank, enemy_ranged, enemy_exploder
 enemy_flyer, enemy_splitter, enemy_shielder, enemy_healer
-enemy_boss_titan, enemy_boss_hydra, enemy_boss_lich
+enemy_boss_goblin_king, enemy_boss_hydra, enemy_boss_lich
 projectile_sword, projectile_arrow, projectile_fireball
 projectile_ice, projectile_lightning, projectile_enemy, projectile_boss
 particle, xp_orb

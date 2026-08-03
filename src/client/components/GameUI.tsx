@@ -158,11 +158,16 @@ export default function GameUI() {
       {/* ── Controls (wave 1 only) ── */}
       {wave === 1 && waveCountdown > 0 && (
         <div className="absolute bottom-6 right-6 text-right text-sm text-gray-500 space-y-1 pointer-events-none">
+          <div className="text-xs text-blue-400 mb-2 font-semibold">🎯 Auto-Shooter + Action Hybrid</div>
           <div>WASD — Move</div>
-          <div>Space — Dodge</div>
+          <div>Space — Dodge (invincible!)</div>
           <div>Q — Active Ability</div>
           <div>E — Ultimate (30 kills)</div>
+          <div>Right-Click — Manual Aim</div>
+          <div>Tab — Cycle Target</div>
           <div>ESC — Pause</div>
+          <div className="mt-2 text-xs text-gray-600 italic">Auto-attacks fire at nearest enemy</div>
+          <div className="text-xs text-gray-600 italic">Right-click to override targeting</div>
         </div>
       )}
     </div>

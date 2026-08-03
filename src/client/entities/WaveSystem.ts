@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Enemy } from '@/client/entities/Enemy';
-import { WAVE_TEMPLATES, generateWaveConfig, WAVE_COUNTDOWN_MS } from '@/shared/constants/waves';
+import { WAVE_TEMPLATES, generateWaveConfig, WAVE_COUNTDOWN_MS, ENEMY_COUNT_SCALE } from '@/shared/constants/waves';
 import { rollEliteModifier } from '@/shared/constants/elites';
 import type { EliteModifier } from '@/shared/constants/elites';
 import type { DifficultyModifiers } from '@/shared/constants/difficulty';
@@ -68,7 +68,13 @@ export class WaveSystem {
     this.beginNextWave();
   }
 
+  // Track player position for spawning relative to player
+  private lastPlayerX: number = 0;
+  private lastPlayerY: number = 0;
+
   update(delta: number, playerX: number, playerY: number) {
+    this.lastPlayerX = playerX;
+    this.lastPlayerY = playerY;
     switch (this.state) {
       case 'countdown':
         this.countdown -= delta;
@@ -140,7 +146,7 @@ export class WaveSystem {
   }
 
   private scheduleSpawns(config: WaveConfig) {
-    const countMult = this.config.difficultyMods?.enemyCountMultiplier ?? 1;
+    const countMult = (this.config.difficultyMods?.enemyCountMultiplier ?? 1) * ENEMY_COUNT_SCALE;
     for (const group of config.spawnGroups) {
       this.pendingSpawns.push({
         group,
@@ -184,7 +190,7 @@ export class WaveSystem {
 
   private spawnGroup(group: SpawnGroup) {
     const waveConfig = this.getWaveConfig(this.currentWave);
-    const countMult = this.config.difficultyMods?.enemyCountMultiplier ?? 1;
+    const countMult = (this.config.difficultyMods?.enemyCountMultiplier ?? 1) * ENEMY_COUNT_SCALE;
     const adjustedCount = Math.ceil(group.count * countMult);
 
     for (let i = 0; i < adjustedCount; i++) {
@@ -194,16 +200,24 @@ export class WaveSystem {
   }
 
   private getSpawnPosition(radiusRatio: number): { x: number; y: number } {
-    // Spawn in a ring around the arena center
+    // Spawn in a ring around the PLAYER so they're always nearby and visible
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const halfW = this.config.arenaWidth / 2;
-    const halfH = this.config.arenaHeight / 2;
-    const r = Math.min(halfW, halfH) * radiusRatio;
+    // With 2.0 zoom on 800x480, visible area is ~400x240. Spawn just off-screen.
+    const minDist = 200;
+    const maxDist = 320;
+    const r = minDist + (maxDist - minDist) * radiusRatio;
 
-    return {
-      x: this.config.centerX + Math.cos(angle) * r,
-      y: this.config.centerY + Math.sin(angle) * r,
-    };
+    // Clamp to arena bounds
+    const x = Phaser.Math.Clamp(
+      this.lastPlayerX + Math.cos(angle) * r,
+      50, this.config.arenaWidth - 50
+    );
+    const y = Phaser.Math.Clamp(
+      this.lastPlayerY + Math.sin(angle) * r,
+      50, this.config.arenaHeight - 50
+    );
+
+    return { x, y };
   }
 
   private spawnEnemy(

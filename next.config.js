@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+
+  // Static export for Capacitor (Android APK wrapping)
+  output: 'export',
   
   // Webpack configuration for Phaser
   webpack: (config, { isServer }) => {
@@ -19,37 +22,9 @@ const nextConfig = {
     return config;
   },
   
-  // Image optimization
+  // Image optimization disabled for static export
   images: {
-    domains: [
-      'ipfs.io',
-      'gateway.pinata.cloud',
-      'nftstorage.link',
-    ],
-    formats: ['image/webp', 'image/avif'],
-  },
-  
-  // Headers for security
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-        ],
-      },
-    ];
+    unoptimized: true,
   },
   
   // Environment variables
