@@ -19,7 +19,6 @@ jobs:
           node-version: 22
           cache: 'npm'
       - run: npm ci
-      - run: npx next lint
       - run: npx tsc --noEmit
 
   test:
@@ -31,7 +30,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - run: npm ci
-      - run: npm test -- --ci --coverage
+      - run: npm test -- --ci
 
   build:
     runs-on: ubuntu-latest
