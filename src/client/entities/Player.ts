@@ -115,7 +115,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const def = HERO_DEFINITIONS[config.heroId];
     if (!def) throw new Error(`Hero ${config.heroId} not found`);
 
-    super(scene, config.x, config.y, `hero_${config.heroId}`);
+    // Use animated spritesheet if available, otherwise fallback to static
+    const sheetKey = `${config.heroId}_idle`;
+    const textureKey = scene.textures.exists(sheetKey) ? sheetKey : `hero_${config.heroId}`;
+    super(scene, config.x, config.y, textureKey);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
@@ -415,6 +418,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Rotate sprite to face movement direction
     if (this.facing.length() > 0) {
       this.setRotation(Math.atan2(this.facing.y, this.facing.x) + Math.PI / 2);
+    }
+
+    // Play animations if available (knight sprite sheets)
+    if (this.heroId === 'knight' && this.anims?.isPlaying !== undefined) {
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      const isMoving = body.velocity.length() > 10;
+      const currentAnim = this.anims.currentAnim?.key ?? '';
+
+      if (this.isDodging) {
+        // Keep current frame during dodge (handled by alpha flash below)
+      } else if (isMoving && currentAnim !== 'knight_run') {
+        if (this.scene.anims.exists('knight_run')) {
+          this.play('knight_run');
+        }
+      } else if (!isMoving && currentAnim !== 'knight_idle') {
+        if (this.scene.anims.exists('knight_idle')) {
+          this.play('knight_idle');
+        }
+      }
     }
 
     // Dodge flash

@@ -19,11 +19,46 @@ export class PreloadScene extends Phaser.Scene {
     // Show loading progress
     this.createLoadingBar();
 
-    // Load real sprite assets
+    // Load real sprite sheet assets
+    this.load.spritesheet('knight_idle', 'sprites/heroes/knight/knight_idle_4f.png', {
+      frameWidth: 64, frameHeight: 64,
+    });
+    this.load.spritesheet('knight_run', 'sprites/heroes/knight/knight_run_6f.png', {
+      frameWidth: 64, frameHeight: 64,
+    });
+    this.load.spritesheet('knight_attack', 'sprites/heroes/knight/knight_attack_3f.png', {
+      frameWidth: 64, frameHeight: 64,
+    });
+    // Fallback static image
     this.load.image('hero_knight', 'sprites/heroes/knight/knight-topdown.png');
   }
 
   create() {
+    // Create knight animations from sprite sheets
+    if (this.textures.exists('knight_idle')) {
+      this.anims.create({
+        key: 'knight_idle',
+        frames: this.anims.generateFrameNumbers('knight_idle', { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
+    if (this.textures.exists('knight_run')) {
+      this.anims.create({
+        key: 'knight_run',
+        frames: this.anims.generateFrameNumbers('knight_run', { start: 0, end: 5 }),
+        frameRate: 12,
+        repeat: -1,
+      });
+    }
+    if (this.textures.exists('knight_attack')) {
+      this.anims.create({
+        key: 'knight_attack',
+        frames: this.anims.generateFrameNumbers('knight_attack', { start: 0, end: 2 }),
+        frameRate: 12,
+        repeat: 0,
+      });
+    }
     // Generate all game textures procedurally
     this.generateHeroTextures();
     this.generateEnemyTextures();
