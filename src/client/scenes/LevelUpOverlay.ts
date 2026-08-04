@@ -29,20 +29,35 @@ export class LevelUpOverlay extends Phaser.Scene {
     const cx = width / 2;
     const cy = height / 2;
 
-    // Responsive sizing
+    // Responsive sizing — derive card dimensions from available space
     const isSmall = height < 500;
-    const titleSize = isSmall ? '32px' : '48px';
+    const titleSize = isSmall ? '28px' : '48px';
     const subtitleSize = isSmall ? '14px' : '20px';
-    const cardH = isSmall ? 180 : 280;
-    const cardW = isSmall ? 160 : 240;
-    const cardY = cy + (isSmall ? 20 : 30);
+
+    // Roll upgrades first so we know how many cards to fit
+    this.choices = rollUpgrades(data.ownedUpgrades, 3);
+    const numCards = Math.max(this.choices.length, 1);
+
+    // Calculate card width from available space: ensure cards never overlap
+    const horizontalPadding = 40; // padding on left/right edges
+    const cardGap = isSmall ? 12 : 20; // minimum gap between cards
+    const maxCardW = isSmall ? 160 : 240;
+    const availableWidth = width - horizontalPadding;
+    const cardW = Math.min(maxCardW, (availableWidth - cardGap * (numCards - 1)) / numCards);
+    const cardH = isSmall ? Math.min(180, height * 0.45) : Math.min(280, height * 0.5);
+    const cardSpacing = cardW + cardGap;
+
+    // Vertical layout: title area at top, cards centered below
+    const titleY = isSmall ? Math.min(cy - cardH / 2 - 50, 40) : 80;
+    const subtitleY = titleY + (isSmall ? 26 : 50);
+    const cardY = isSmall ? cy + 10 : Math.max(subtitleY + 60 + cardH / 2, cy + 30);
 
     // Dark overlay
     this.add.rectangle(cx, cy, width, height, 0x000000, 0.85);
 
     // Title
     this.add
-      .text(cx, isSmall ? cy - 100 : 80, `LEVEL ${data.playerLevel}`, {
+      .text(cx, titleY, `LEVEL ${data.playerLevel}`, {
         fontSize: titleSize,
         color: '#ffcc44',
         fontStyle: 'bold',
@@ -52,14 +67,11 @@ export class LevelUpOverlay extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, isSmall ? cy - 70 : 130, 'Choose an upgrade', {
+      .text(cx, subtitleY, 'Choose an upgrade', {
         fontSize: subtitleSize,
         color: '#aabbcc',
       })
       .setOrigin(0.5);
-
-    // Roll 3 upgrades
-    this.choices = rollUpgrades(data.ownedUpgrades, 3);
 
     if (this.choices.length === 0) {
       this.add
@@ -91,14 +103,13 @@ export class LevelUpOverlay extends Phaser.Scene {
         kb.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER).once('down', () => this.dismiss());
       }
     } else {
-      // Create upgrade cards - responsive spacing
-      const maxCardSpacing = Math.min(cardW + 40, (width - 40) / this.choices.length);
-      const startX = cx - (this.choices.length - 1) * maxCardSpacing / 2;
+      // Create upgrade cards — evenly spaced, guaranteed no overlap
+      const startX = cx - (this.choices.length - 1) * cardSpacing / 2;
 
       this.choices.forEach((upgradeId, i) => {
         const def = UPGRADE_DEFINITIONS[upgradeId];
         const stacks = data.ownedUpgrades[upgradeId] ?? 0;
-        this.createUpgradeCard(startX + i * maxCardSpacing, cardY, def, stacks, i + 1, cardW, cardH, () => {
+        this.createUpgradeCard(startX + i * cardSpacing, cardY, def, stacks, i + 1, cardW, cardH, () => {
           this.selectUpgrade(upgradeId);
         });
       });
