@@ -374,15 +374,16 @@ export class GameScene extends Phaser.Scene {
   // ── HUD ───────────────────────────────────────────────────────────────────
 
   private createHud() {
+    const { width } = this.scale;
     this.waveText = this.add
-      .text(640, 30, 'WAVE 1', {
+      .text(width / 2, 30, 'WAVE 1', {
         fontSize: '28px', color: '#ffffff',
         fontStyle: 'bold', stroke: '#000000', strokeThickness: 4,
       })
       .setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
     this.countdownText = this.add
-      .text(640, 65, 'WAVE STARTING...', {
+      .text(width / 2, 65, 'WAVE STARTING...', {
         fontSize: '20px', color: '#ffcc44',
         stroke: '#000000', strokeThickness: 3,
       })
@@ -1066,9 +1067,10 @@ export class GameScene extends Phaser.Scene {
     // Clear elite challenge after one wave
     (this as any)._eliteChallengeActive = false;
 
+    const { width: sw, height: sh } = this.scale;
     const txt = this.add
-      .text(640, 360, `WAVE ${wave}`, {
-        fontSize: '72px', color: '#ffffff',
+      .text(sw / 2, sh / 2, `WAVE ${wave}`, {
+        fontSize: Math.min(72, sw * 0.09) + 'px', color: '#ffffff',
         fontStyle: 'bold', stroke: '#4488ff', strokeThickness: 6,
       })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
@@ -1076,12 +1078,12 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({
       targets: txt,
       alpha: { from: 0, to: 1 },
-      y: { from: 380, to: 330 },
+      y: { from: sh / 2 + 20, to: sh / 2 - 30 },
       duration: 400,
       ease: 'Power2',
       onComplete: () => {
         this.tweens.add({
-          targets: txt, alpha: 0, y: 290,
+          targets: txt, alpha: 0, y: sh / 2 - 70,
           duration: 800, delay: 800, ease: 'Power2',
           onComplete: () => txt.destroy(),
         });

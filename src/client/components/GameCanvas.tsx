@@ -28,13 +28,12 @@ export default function GameCanvas() {
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       parent: containerRef.current,
-      backgroundColor: '#2a5c1e',
+      backgroundColor: '#0a0a1a',
       scale: {
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 800,
-        height: 480,
-        // Mobile: expand to fill screen
+        width: '100%',
+        height: '100%',
         expandParent: true,
       },
       physics: {

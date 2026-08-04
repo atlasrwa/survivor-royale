@@ -177,25 +177,39 @@ export class SoundManager {
 
   private soundPlayerAttack(ctx: AudioContext, pitch: number, volume: number) {
     const now = ctx.currentTime;
-    // Noise-based whoosh with pitched character
+    // Clean synthesized slash: quick descending sine + soft noise layer
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600 * pitch, now);
+    osc.frequency.exponentialRampToValueAtTime(150 * pitch, now + 0.08);
+
+    const oscGain = ctx.createGain();
+    oscGain.gain.setValueAtTime(0.25 * volume, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.sfxGain!);
+    osc.start(now);
+    osc.stop(now + 0.1);
+
+    // Soft high-frequency air layer (much quieter than before)
     const source = ctx.createBufferSource();
     source.buffer = this.noiseBuffer!;
-    source.playbackRate.value = pitch;
+    source.playbackRate.value = pitch * 1.5;
 
-    const bandpass = ctx.createBiquadFilter();
-    bandpass.type = 'bandpass';
-    bandpass.frequency.value = 800 * pitch;
-    bandpass.Q.value = 2;
+    const highpass = ctx.createBiquadFilter();
+    highpass.type = 'highpass';
+    highpass.frequency.value = 2000 * pitch;
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.4 * volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    gain.gain.setValueAtTime(0.08 * volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
 
-    source.connect(bandpass);
-    bandpass.connect(gain);
+    source.connect(highpass);
+    highpass.connect(gain);
     gain.connect(this.sfxGain!);
     source.start(now);
-    source.stop(now + 0.12);
+    source.stop(now + 0.07);
   }
 
   private soundEnemyHit(ctx: AudioContext, pitch: number, volume: number) {

@@ -15,7 +15,14 @@ export class SkillTreeScene extends Phaser.Scene {
   }
 
   init(data?: { heroId?: string }) {
-    this.selectedHero = data?.heroId ?? 'knight';
+    // Use passed heroId, or fall back to the gameStore's selected hero
+    if (data?.heroId) {
+      this.selectedHero = data.heroId;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { useGameStore } = require('@/client/store/gameStore');
+      this.selectedHero = useGameStore.getState().selectedHero ?? 'knight';
+    }
   }
 
   create() {
