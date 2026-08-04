@@ -91,7 +91,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyType, EnemyDefinition> = {
       hp: 42,
       speed: 110,
       defense: 0,
-      attackDamage: 66,
+      attackDamage: 45,
       attackSpeed: 0,
       attackRange: 40,
       xpReward: 25,

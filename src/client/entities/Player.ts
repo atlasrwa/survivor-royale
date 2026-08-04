@@ -76,7 +76,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   // Perfect dodge: triggered when dodging through an attack
   isPerfectDodgeActive: boolean = false;
   private perfectDodgeTimer: number = 0;
-  private readonly PERFECT_DODGE_WINDOW = 150; // ms window at start of dodge for "perfect"
+  private readonly PERFECT_DODGE_WINDOW = 280; // ms window at start of dodge for "perfect"
   private readonly PERFECT_DODGE_BONUS_DURATION = 1500; // 1.5s of bonus after perfect dodge
   private perfectDodgeElapsed: number = 0; // time since dodge started (to check window)
 

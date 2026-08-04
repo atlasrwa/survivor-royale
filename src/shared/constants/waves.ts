@@ -10,7 +10,8 @@ export const WAVE_TEMPLATES: WaveConfig[] = [
     duration: 0,
     difficultyMultiplier: 1.0,
     spawnGroups: [
-      { type: 'walker', count: 15, delay: 0, spawnRadius: 0.55 },
+      { type: 'walker', count: 8, delay: 0, spawnRadius: 0.55 },
+      { type: 'walker', count: 7, delay: 4000, spawnRadius: 0.6 },
     ],
   },
   // Wave 2

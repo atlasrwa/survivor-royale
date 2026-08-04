@@ -30,6 +30,7 @@ export class WaveSystem {
   state: WaveState = 'countdown';
   countdown: number = WAVE_COUNTDOWN_MS;
   enemiesRemaining: number = 0;
+  private stuckTimer: number = 0;
   totalSpawned: number = 0;
 
   // Pending spawns (delayed groups)
@@ -88,6 +89,22 @@ export class WaveSystem {
         this.updatePendingSpawns(delta);
         this.updateEnemies(delta, playerX, playerY);
         this.checkWaveClear();
+
+        // Fallback: if enemies remaining > 0 but no active enemies exist for 5s, force clear
+        if (this.enemiesRemaining > 0 && this.pendingSpawns.length === 0) {
+          const activeCount = this.enemiesGroup.getChildren().filter((e: { active: boolean }) => e.active).length;
+          if (activeCount === 0) {
+            this.stuckTimer = (this.stuckTimer ?? 0) + delta;
+            if (this.stuckTimer > 5000) {
+              this.enemiesRemaining = 0;
+              this.stuckTimer = 0;
+            }
+          } else {
+            this.stuckTimer = 0;
+          }
+        } else {
+          this.stuckTimer = 0;
+        }
         break;
 
       case 'clear':

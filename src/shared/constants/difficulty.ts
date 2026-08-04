@@ -60,7 +60,7 @@ export const DIFFICULTY_TIERS: Record<DifficultyTier, DifficultyModifiers> = {
     enemyMixOffset: 0,
     enemyCountMultiplier: 1.0,
     xpDropMultiplier: 1.0,
-    healingMultiplier: 0.7,
+    healingMultiplier: 1.0,
     scoreMultiplier: 1.0,
   },
   hard: {

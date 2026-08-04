@@ -60,7 +60,7 @@ export const UPGRADE_DEFINITIONS: Record<UpgradeId, UpgradeDefinition> = {
     name: '🛡️ Thick Skin',
     description: '+5 defense (flat damage reduction)',
     color: 0x4488ff,
-    maxStacks: 10,
+    maxStacks: 6,
   },
   dodge_cd: {
     id: 'dodge_cd',

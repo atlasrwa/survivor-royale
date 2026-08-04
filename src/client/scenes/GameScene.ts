@@ -157,7 +157,7 @@ export class GameScene extends Phaser.Scene {
     // XP orb group
     this.xpOrbs = this.physics.add.group({
       classType: XpOrb,
-      maxSize: 400,
+      maxSize: 800,
       runChildUpdate: false,
     });
 
@@ -367,7 +367,7 @@ export class GameScene extends Phaser.Scene {
 
   private setupCamera() {
     this.cameras.main.setBounds(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+    this.cameras.main.startFollow(this.player, true, 0.18, 0.18);
     this.cameras.main.setZoom(2.0);
   }
 
@@ -1175,6 +1175,25 @@ export class GameScene extends Phaser.Scene {
 
   private handlePlayerDeath() {
     if (this.isGameOver) return;
+
+    // Check auto-revive before triggering game over
+    if (this.player.hasAutoRevive) {
+      this.player.hasAutoRevive = false;
+      this.player.hp = Math.floor(this.player.maxHp * 0.3);
+      // Dramatic revival effect
+      this.cameras.main.flash(500, 68, 255, 136, false);
+      this.player.setTint(0x44ff88);
+      this.time.delayedCall(600, () => {
+        if (this.player.active) this.player.clearTint();
+      });
+      // Brief invincibility
+      this.player.isInvincible = true;
+      this.time.delayedCall(2000, () => {
+        if (this.player.active) this.player.isInvincible = false;
+      });
+      return;
+    }
+
     this.isGameOver = true;
 
     this.abilitySystem.stopAll();
