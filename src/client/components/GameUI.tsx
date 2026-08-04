@@ -1,5 +1,7 @@
 import { useGameStore } from '@/client/store/gameStore';
 import { useShallow } from 'zustand/react/shallow';
+import { WalletButton } from './WalletButton';
+import { ScoreSubmitPanel } from './ScoreSubmitPanel';
 
 export default function GameUI() {
   const {
@@ -7,7 +9,7 @@ export default function GameUI() {
     wave, score, enemiesKilled, enemiesRemaining, waveCountdown,
     comboCount, comboMultiplier,
     activeAbilityRatio, ultimateRatio, ultimateChargeRatio,
-    dodgeCooldownRatio,
+    dodgeCooldownRatio, selectedHero,
   } = useGameStore(useShallow((state) => ({
     phase: state.phase,
     playerHp: state.playerHp,
@@ -26,7 +28,32 @@ export default function GameUI() {
     ultimateRatio: state.ultimateRatio,
     ultimateChargeRatio: state.ultimateChargeRatio,
     dodgeCooldownRatio: state.dodgeCooldownRatio,
+    selectedHero: state.selectedHero,
   })));
+
+  // Wallet button is always visible (top-right) during menu/game_over
+  // Does NOT block gameplay — purely optional for crypto features
+  if (phase === 'menu') {
+    return (
+      <div id="ui-overlay" aria-label="Menu HUD">
+        <div className="absolute top-4 right-4 z-50">
+          <WalletButton />
+        </div>
+      </div>
+    );
+  }
+
+  // After game over: show wallet + leaderboard submit panel
+  if (phase === 'game_over') {
+    return (
+      <div id="ui-overlay" aria-label="Game Over HUD">
+        <div className="absolute top-4 right-4 z-50">
+          <WalletButton />
+        </div>
+        <ScoreSubmitPanel score={score} wave={wave} heroId={selectedHero} />
+      </div>
+    );
+  }
 
   if (phase !== 'playing') return null;
 

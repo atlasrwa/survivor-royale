@@ -17,10 +17,15 @@ describe('UPGRADE_DEFINITIONS', () => {
     'lifesteal',
     'knockback',
     'multishot',
+    'orbit_shield',
+    'magnetic',
+    'chain_shot',
+    'adrenaline',
+    'glass_cannon',
   ];
 
-  it('contains all 10 upgrades', () => {
-    expect(Object.keys(UPGRADE_DEFINITIONS)).toHaveLength(10);
+  it('contains all 15 upgrades', () => {
+    expect(Object.keys(UPGRADE_DEFINITIONS)).toHaveLength(15);
     expectedUpgrades.forEach((id) => {
       expect(UPGRADE_DEFINITIONS[id]).toBeDefined();
     });

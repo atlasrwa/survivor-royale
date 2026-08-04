@@ -5,12 +5,15 @@ import { PreloadScene } from '@/client/scenes/PreloadScene';
 import { MainMenuScene } from '@/client/scenes/MainMenuScene';
 import { GameScene } from '@/client/scenes/GameScene';
 import { GameOverScene } from '@/client/scenes/GameOverScene';
+import { RunSummaryScene } from '@/client/scenes/RunSummaryScene';
 import { LevelUpOverlay } from '@/client/scenes/LevelUpOverlay';
 import { PauseMenu } from '@/client/scenes/PauseMenu';
 import { SettingsScene } from '@/client/scenes/SettingsScene';
 import { TutorialOverlay } from '@/client/scenes/TutorialOverlay';
 import { SkillTreeScene } from '@/client/scenes/SkillTreeScene';
+import { MetaShopScene } from '@/client/scenes/MetaShopScene';
 import { TouchControls } from '@/client/scenes/TouchControls';
+import { ShareOverlay } from '@/client/scenes/ShareOverlay';
 
 let gameInstance: Phaser.Game | null = null;
 
@@ -45,7 +48,7 @@ export default function GameCanvas() {
       input: {
         activePointers: 3,
       },
-      scene: [BootScene, PreloadScene, MainMenuScene, GameScene, GameOverScene, LevelUpOverlay, PauseMenu, SettingsScene, TutorialOverlay, SkillTreeScene, TouchControls],
+      scene: [BootScene, PreloadScene, MainMenuScene, GameScene, GameOverScene, RunSummaryScene, LevelUpOverlay, PauseMenu, SettingsScene, TutorialOverlay, SkillTreeScene, MetaShopScene, TouchControls, ShareOverlay],
     };
 
     gameInstance = new Phaser.Game(config);

@@ -3,6 +3,7 @@ import type { GamePhase, GameMode, GameSessionState } from '@/shared/types/waves
 import type { HeroId } from '@/shared/types/entities';
 import type { DifficultyTier } from '@/shared/constants/difficulty';
 import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
+import { saveManager } from '@/client/utils/SaveManager';
 
 interface GameStore {
   // Session state
@@ -19,6 +20,9 @@ interface GameStore {
   // Combo
   comboCount: number;
   comboMultiplier: number;
+
+  // Gold
+  gold: number;
 
   // Abilities
   activeAbilityRatio: number;   // 0=on cooldown, 1=ready
@@ -52,6 +56,7 @@ interface GameStore {
   resetGame: () => void;
   selectHero: (hero: HeroId) => void;
   setDifficulty: (tier: DifficultyTier) => void;
+  addGold: (amount: number) => void;
 }
 
 const defaultSession: GameSessionState = {
@@ -73,6 +78,7 @@ export const useGameStore = create<GameStore>((set) => ({
   difficulty: 'normal' as DifficultyTier,
   comboCount: 0,
   comboMultiplier: 1,
+  gold: saveManager.getGold(),
   activeAbilityRatio: 1,
   ultimateRatio: 1,
   ultimateChargeRatio: 0,
@@ -139,4 +145,6 @@ export const useGameStore = create<GameStore>((set) => ({
   selectHero: (hero) => set({ selectedHero: hero }),
 
   setDifficulty: (tier) => set({ difficulty: tier }),
+
+  addGold: (amount) => set((s) => ({ gold: s.gold + amount })),
 }));

@@ -139,7 +139,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setCircle(18, 0, 0);
     body.setMaxVelocity(600, 600);
     this.setDepth(10);
-    this.setScale(1.3);
+
+    // Real sprites are 64px, scale to game size
+    // Placeholder sprites are 32px, scale up slightly
+    const textureFrame = this.texture.get('__BASE');
+    const texSize = textureFrame?.width ?? 32;
+    if (texSize >= 64) {
+      this.setScale(0.7); // 64px * 0.7 = ~45px in-game
+      body.setCircle(22, 10, 10);
+    } else {
+      this.setScale(1.3); // 32px * 1.3 = ~42px in-game
+    }
 
     // Hero-specific innate bonuses (identity passives)
     this.applyHeroPassives();

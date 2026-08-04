@@ -38,8 +38,8 @@ describe('HERO_DEFINITIONS', () => {
 });
 
 describe('xpForLevel', () => {
-  it('returns 100 for level 1', () => {
-    expect(xpForLevel(1)).toBe(100);
+  it('returns 120 for level 1 (linear: 80 + 40*level)', () => {
+    expect(xpForLevel(1)).toBe(120);
   });
 
   it('returns increasing values for successive levels', () => {

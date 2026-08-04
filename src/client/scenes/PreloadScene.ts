@@ -3,6 +3,7 @@ import { ENEMY_DEFINITIONS } from '@/shared/constants/enemies';
 import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
 import { SoundManager } from '@/client/utils/SoundManager';
 import { saveManager } from '@/client/utils/SaveManager';
+import { createParticleTextures } from '@/client/entities/ParticleSystem';
 import type { EnemyType } from '@/shared/types/entities';
 
 /**
@@ -17,6 +18,9 @@ export class PreloadScene extends Phaser.Scene {
   preload() {
     // Show loading progress
     this.createLoadingBar();
+
+    // Load real sprite assets
+    this.load.image('hero_knight', 'sprites/heroes/knight/knight-topdown.png');
   }
 
   create() {
@@ -26,6 +30,9 @@ export class PreloadScene extends Phaser.Scene {
     this.generateProjectileTextures();
     this.generateArenaTexture();
     this.generateParticleTexture();
+
+    // Generate particle effect textures (circles, sparks, stars, etc.)
+    createParticleTextures(this);
 
     // Apply saved volume settings
     const settings = saveManager.getSettings();
@@ -70,21 +77,22 @@ export class PreloadScene extends Phaser.Scene {
 
   private generateHeroTextures() {
     for (const [heroId, def] of Object.entries(HERO_DEFINITIONS)) {
-      if (!this.textures.exists(`hero_${heroId}`)) {
-        const size = 32;
-        const gfx = this.make.graphics({ x: 0, y: 0 });
+      // Skip if a real texture was already loaded in preload()
+      if (this.textures.exists(`hero_${heroId}`)) continue;
 
-        // Body
-        gfx.fillStyle(def.color, 1);
-        gfx.fillCircle(size / 2, size / 2, size / 2 - 2);
+      const size = 32;
+      const gfx = this.make.graphics({ x: 0, y: 0 });
 
-        // Direction indicator (facing up by default)
-        gfx.fillStyle(0xffffff, 0.8);
-        gfx.fillTriangle(size / 2, 4, size / 2 - 6, size / 2 + 4, size / 2 + 6, size / 2 + 4);
+      // Body
+      gfx.fillStyle(def.color, 1);
+      gfx.fillCircle(size / 2, size / 2, size / 2 - 2);
 
-        gfx.generateTexture(`hero_${heroId}`, size, size);
-        gfx.destroy();
-      }
+      // Direction indicator (facing up by default)
+      gfx.fillStyle(0xffffff, 0.8);
+      gfx.fillTriangle(size / 2, 4, size / 2 - 6, size / 2 + 4, size / 2 + 6, size / 2 + 4);
+
+      gfx.generateTexture(`hero_${heroId}`, size, size);
+      gfx.destroy();
     }
   }
 

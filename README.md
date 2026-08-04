@@ -88,8 +88,8 @@ Fire/Ice/Lightning stances • Element fusion • Cataclysm ultimate
 ### Smart Contracts
 - **Language**: Solidity 0.8.x
 - **Framework**: Hardhat
-- **Network**: Polygon (low gas fees)
-- **Standards**: ERC-20 (token), ERC-721 (NFTs)
+- **Network**: Base (low gas fees, Coinbase L2)
+- **Standards**: ERC-20 (USDC), ERC-721 (NFTs)
 
 ### Infrastructure
 - **Hosting**: Vercel (frontend), Railway (backend)

@@ -8,7 +8,7 @@ describe('ENEMY_DEFINITIONS', () => {
     'tank',
     'ranged',
     'exploder',
-    'boss_titan',
+    'boss_goblin_king',
   ];
 
   const newEnemyTypes: EnemyType[] = [

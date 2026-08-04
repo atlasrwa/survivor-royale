@@ -4,7 +4,6 @@ import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
 import { DIFFICULTY_TIERS, ALL_DIFFICULTY_TIERS, type DifficultyTier } from '@/shared/constants/difficulty';
 import { playSound } from '@/client/utils/SoundManager';
 import type { HeroId } from '@/shared/types/entities';
-import { saveManager } from '@/client/utils/SaveManager';
 
 /**
  * MainMenuScene - Hero selection, difficulty selection, and game start.
@@ -28,105 +27,78 @@ export class MainMenuScene extends Phaser.Scene {
 
     // Title
     this.add
-      .text(cx, 70, 'SURVIVOR ROYALE', {
-        fontSize: '52px',
+      .text(cx, 30, 'SURVIVOR ROYALE', {
+        fontSize: '28px',
         color: '#4488ff',
         fontStyle: 'bold',
         stroke: '#000033',
-        strokeThickness: 4,
+        strokeThickness: 3,
       })
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 120, 'Skill-based auto-shooter', {
-        fontSize: '18px',
+      .text(cx, 55, 'Skill-based auto-shooter', {
+        fontSize: '11px',
         color: '#8899aa',
       })
       .setOrigin(0.5);
 
     // Hero selection
     this.add
-      .text(cx, 180, 'SELECT YOUR HERO', {
-        fontSize: '22px',
+      .text(cx, 80, 'SELECT HERO', {
+        fontSize: '12px',
         color: '#aabbcc',
-        letterSpacing: 4,
+        letterSpacing: 2,
       })
       .setOrigin(0.5);
 
-    // Hero cards
+    // Hero cards (compact)
     const heroes = Object.values(HERO_DEFINITIONS);
-    const cardWidth = 200;
-    const cardSpacing = 220;
+    const cardSpacing = 150;
     const totalWidth = heroes.length * cardSpacing - 20;
-    const startX = cx - totalWidth / 2 + cardWidth / 2;
+    const startX = cx - totalWidth / 2 + 65;
 
     heroes.forEach((hero, i) => {
       const x = startX + i * cardSpacing;
-      const card = this.createHeroCard(x, 340, hero.id as HeroId);
+      const card = this.createHeroCard(x, 170, hero.id as HeroId);
       this.heroCards.set(hero.id, card);
-
-      // Show best wave below each hero card
-      const heroStats = saveManager.getHeroStats(hero.id);
-      if (heroStats.bestWave > 0) {
-        this.add
-          .text(x, 475, `Best: Wave ${heroStats.bestWave}`, {
-            fontSize: '12px',
-            color: '#66aa88',
-          })
-          .setOrigin(0.5);
-      }
     });
-
-    // Lifetime stats section
-    const lifetimeStats = saveManager.getLifetimeStats();
-    if (lifetimeStats.totalGamesPlayed > 0) {
-      const heroIds: HeroId[] = ['knight', 'archer', 'mage'];
-      const bestScore = Math.max(0, ...heroIds.map(id => saveManager.getHeroStats(id).bestScore));
-      this.add
-        .text(cx, 505, `Games: ${lifetimeStats.totalGamesPlayed}  •  Best Score: ${bestScore.toLocaleString()}`, {
-          fontSize: '13px',
-          color: '#667788',
-        })
-        .setOrigin(0.5);
-    }
 
     // ── Difficulty Selection ──────────────────────────────────────────────
     this.add
-      .text(cx, 530, 'DIFFICULTY', {
-        fontSize: '18px',
+      .text(cx, 275, 'DIFFICULTY', {
+        fontSize: '11px',
         color: '#aabbcc',
-        letterSpacing: 3,
+        letterSpacing: 2,
       })
       .setOrigin(0.5);
 
-    const diffCardWidth = 160;
-    const diffSpacing = 180;
+    const diffSpacing = 130;
     const totalDiffWidth = ALL_DIFFICULTY_TIERS.length * diffSpacing - 20;
-    const diffStartX = cx - totalDiffWidth / 2 + diffCardWidth / 2;
+    const diffStartX = cx - totalDiffWidth / 2 + 55;
 
     ALL_DIFFICULTY_TIERS.forEach((tierId, i) => {
       const tier = DIFFICULTY_TIERS[tierId];
       const dx = diffStartX + i * diffSpacing;
-      const dy = 580;
+      const dy = 310;
 
       const bg = this.add
-        .rectangle(dx, dy, diffCardWidth, 60, 0x111133)
+        .rectangle(dx, dy, 120, 40, 0x111133)
         .setStrokeStyle(2, 0x334466)
         .setInteractive({ useHandCursor: true });
 
       const label = this.add
-        .text(dx, dy - 12, `${tier.icon} ${tier.name}`, {
-          fontSize: '16px',
+        .text(dx, dy - 5, `${tier.icon} ${tier.name}`, {
+          fontSize: '12px',
           color: '#ffffff',
           fontStyle: 'bold',
         })
         .setOrigin(0.5);
 
       this.add
-        .text(dx, dy + 12, tier.description, {
-          fontSize: '10px',
+        .text(dx, dy + 12, tier.description.split('.')[0]!, {
+          fontSize: '8px',
           color: '#778899',
-          wordWrap: { width: diffCardWidth - 10 },
           align: 'center',
         })
         .setOrigin(0.5);
@@ -134,14 +106,10 @@ export class MainMenuScene extends Phaser.Scene {
       this.difficultyCards.set(tierId, { bg, text: label });
 
       bg.on('pointerover', () => {
-        if (this.selectedDifficulty !== tierId) {
-          bg.setFillStyle(0x1a2255);
-        }
+        if (this.selectedDifficulty !== tierId) bg.setFillStyle(0x1a2255);
       });
       bg.on('pointerout', () => {
-        if (this.selectedDifficulty !== tierId) {
-          bg.setFillStyle(0x111133);
-        }
+        if (this.selectedDifficulty !== tierId) bg.setFillStyle(0x111133);
       });
       bg.on('pointerdown', () => {
         playSound('uiClick');
@@ -149,25 +117,34 @@ export class MainMenuScene extends Phaser.Scene {
       });
     });
 
-    // Start button
-    this.createButton(cx, 650, 'START GAME', 0x4488ff, () => {
+    // Start button (prominent, easy to tap)
+    this.createButton(cx, 380, 'START GAME', 0x4488ff, () => {
       this.startGame();
     });
 
-    // Settings button
-    this.createButton(cx, 720, 'SETTINGS', 0x334466, () => {
+    // Smaller secondary buttons
+    this.createButton(cx - 100, 430, 'SETTINGS', 0x334466, () => {
       this.scene.launch('SettingsScene');
-    }, false);
+    }, false, true);
 
-    // Skill Trees button
-    this.createButton(cx, 780, 'SKILL TREES', 0x443366, () => {
+    this.createButton(cx + 100, 430, 'SKILLS', 0x443366, () => {
       this.scene.start('SkillTreeScene', { heroId: this.selectedHero });
-    });
+    }, true, true);
+
+    // Shop button (bottom-left)
+    this.createButton(70, height - 45, '🪙 SHOP', 0x554400, () => {
+      this.scene.start('MetaShopScene');
+    }, true, true);
+
+    // Battle Pass button (bottom-right)
+    this.createButton(width - 100, height - 45, '⚔️ BATTLE PASS', 0x443366, () => {
+      this.scene.start('BattlePassScene');
+    }, true, true);
 
     // Controls hint
     this.add
-      .text(cx, height - 30, 'WASD / Arrow Keys: Move  •  Space: Dodge  •  Auto-attacks enemies', {
-        fontSize: '14px',
+      .text(cx, height - 15, 'Auto-attacks • Space: Dodge • Q/E: Abilities', {
+        fontSize: '9px',
         color: '#556677',
       })
       .setOrigin(0.5);
@@ -185,8 +162,8 @@ export class MainMenuScene extends Phaser.Scene {
     if (!def) throw new Error(`Hero ${heroId} not found`);
 
     const container = this.add.container(x, y);
-    const cardW = 190;
-    const cardH = 240;
+    const cardW = 130;
+    const cardH = 150;
 
     // Background
     const bg = this.add
@@ -195,67 +172,37 @@ export class MainMenuScene extends Phaser.Scene {
 
     // Hero sprite preview
     const sprite = this.add
-      .image(0, -60, `hero_${heroId}`)
-      .setDisplaySize(64, 64);
+      .image(0, -40, `hero_${heroId}`)
+      .setDisplaySize(48, 48);
 
     // Name
     const nameText = this.add
-      .text(0, -10, def.name.toUpperCase(), {
-        fontSize: '18px',
+      .text(0, 0, def.name.toUpperCase(), {
+        fontSize: '13px',
         color: '#ffffff',
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
 
-    // Description
+    // Description (short)
     const descText = this.add
-      .text(0, 20, def.description, {
-        fontSize: '11px',
+      .text(0, 18, def.description.split('.')[0]!, {
+        fontSize: '8px',
         color: '#8899aa',
-        wordWrap: { width: 170 },
+        wordWrap: { width: 120 },
         align: 'center',
       })
       .setOrigin(0.5);
-
-    // Stat bars
-    const statsY = 80;
-    const statLabels = ['HP', 'SPD', 'ATK'];
-    const statValues = [
-      def.baseStats.maxHp / 200,
-      def.baseStats.speed / 300,
-      def.baseStats.attackDamage / 80,
-    ];
-    const statColors = [0xff4444, 0x44ff88, 0x4488ff];
-
-    statLabels.forEach((label, i) => {
-      this.add
-        .text(-80, statsY + i * 18, label, {
-          fontSize: '11px',
-          color: '#778899',
-        })
-        .setOrigin(0, 0.5)
-
-      const barBg = this.add.rectangle(10, statsY + i * 18, 110, 8, 0x223344).setOrigin(0, 0.5);
-      const barFill = this.add
-        .rectangle(10, statsY + i * 18, Math.max(4, 110 * statValues[i]!), 8, statColors[i]!)
-        .setOrigin(0, 0.5);
-
-      container.add([barBg, barFill]);
-    });
 
     container.add([bg, sprite, nameText, descText]);
 
     // Make interactive
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerover', () => {
-      if (this.selectedHero !== heroId) {
-        bg.setFillStyle(0x1a2255);
-      }
+      if (this.selectedHero !== heroId) bg.setFillStyle(0x1a2255);
     });
     bg.on('pointerout', () => {
-      if (this.selectedHero !== heroId) {
-        bg.setFillStyle(0x111133);
-      }
+      if (this.selectedHero !== heroId) bg.setFillStyle(0x111133);
     });
     bg.on('pointerdown', () => {
       playSound('uiClick');
@@ -311,13 +258,18 @@ export class MainMenuScene extends Phaser.Scene {
     label: string,
     color: number,
     onClick: () => void,
-    fadeOnClick: boolean = true
+    fadeOnClick: boolean = true,
+    small: boolean = false
   ): Phaser.GameObjects.Container {
     const container = this.add.container(x, y);
-    const bg = this.add.rectangle(0, 0, 240, 56, color).setStrokeStyle(2, 0xffffff);
+    const w = small ? 150 : 200;
+    const h = small ? 32 : 42;
+    const fontSize = small ? '13px' : '18px';
+
+    const bg = this.add.rectangle(0, 0, w, h, color).setStrokeStyle(2, 0xffffff);
     const text = this.add
       .text(0, 0, label, {
-        fontSize: '22px',
+        fontSize,
         color: '#ffffff',
         fontStyle: 'bold',
       })

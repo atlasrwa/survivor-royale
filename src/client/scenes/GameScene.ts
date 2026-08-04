@@ -6,16 +6,22 @@ import { EnemyProjectile } from '@/client/entities/EnemyProjectile';
 import { WeaponSystem } from '@/client/entities/WeaponSystem';
 import { WaveSystem } from '@/client/entities/WaveSystem';
 import { XpOrb } from '@/client/entities/XpOrb';
+import { GoldOrb } from '@/client/entities/GoldOrb';
 import { AbilitySystem } from '@/client/entities/AbilitySystem';
 import { DamageNumber } from '@/client/entities/DamageNumber';
 import { Minimap } from '@/client/entities/Minimap';
+import { ParticleSystem, createParticleTextures } from '@/client/entities/ParticleSystem';
 import { useGameStore } from '@/client/store/gameStore';
 import { playSound, SoundManager } from '@/client/utils/SoundManager';
 import { HitStop } from '@/client/utils/HitStop';
+import { ScreenShake } from '@/client/utils/ScreenShake';
+import { TimeScale } from '@/client/utils/TimeScale';
 import { saveManager } from '@/client/utils/SaveManager';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '@/shared/constants/waves';
 import type { UpgradeId } from '@/shared/constants/upgrades';
 import type { HeroId, EnemyType } from '@/shared/types/entities';
+import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
+import { ENEMY_DEFINITIONS } from '@/shared/constants/enemies';
 import { getAvailableEvolutions, type EvolvedWeaponId } from '@/shared/constants/evolutions';
 import { DIFFICULTY_TIERS, type DifficultyTier, type DifficultyModifiers } from '@/shared/constants/difficulty';
 
@@ -34,17 +40,21 @@ export class GameScene extends Phaser.Scene {
   private waveSystem!: WaveSystem;
   private abilitySystem!: AbilitySystem;
   private hitStop!: HitStop;
+  private screenShake!: ScreenShake;
+  private timeScale!: TimeScale;
   private minimap!: Minimap;
 
   // Groups
   private enemyProjectiles!: Phaser.Physics.Arcade.Group;
   private xpOrbs!: Phaser.Physics.Arcade.Group;
+  private goldOrbs!: Phaser.Physics.Arcade.Group;
 
   // Map
 
   // In-scene HUD
   private waveText!: Phaser.GameObjects.Text;
   private countdownText!: Phaser.GameObjects.Text;
+  private goldText!: Phaser.GameObjects.Text;
 
   // Boss health bar
   private bossBarBg!: Phaser.GameObjects.Rectangle;
@@ -95,6 +105,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // Initialize visual effects systems
+    createParticleTextures(this);
+    ParticleSystem.initialize(this);
+    this.screenShake = new ScreenShake(this.cameras.main);
+    this.timeScale = new TimeScale(this);
+
     this.createArena();
 
     // Player
@@ -142,6 +158,13 @@ export class GameScene extends Phaser.Scene {
     this.xpOrbs = this.physics.add.group({
       classType: XpOrb,
       maxSize: 400,
+      runChildUpdate: false,
+    });
+
+    // Gold orb group
+    this.goldOrbs = this.physics.add.group({
+      classType: GoldOrb,
+      maxSize: 100,
       runChildUpdate: false,
     });
 
@@ -270,6 +293,14 @@ export class GameScene extends Phaser.Scene {
       if (proj.hasHitEnemy(enemy)) return;
       proj.registerHit(enemy);
       this.weaponSystem.handleProjectileHitEnemy(proj, enemy);
+
+      // Visual feedback: hit sparks and micro screen shake
+      const angle = Phaser.Math.Angle.Between(proj.x, proj.y, enemy.x, enemy.y);
+      const enemyDef = ENEMY_DEFINITIONS[enemy.enemyType as keyof typeof ENEMY_DEFINITIONS];
+      const enemyColor = enemyDef?.color ?? 0xffdd44;
+      ParticleSystem.getInstance().hitSparks(enemy.x, enemy.y, angle, enemyColor);
+      this.screenShake.microShake();
+
       if (!enemy.active || enemy.hp <= 0) {
         this.hitStop.trigger(33); // 2 frames on kill
       }
@@ -303,6 +334,13 @@ export class GameScene extends Phaser.Scene {
       if (!orb.active) return;
       this.player.gainXp(orb.xpValue);
       orb.destroy();
+    });
+
+    // Player walks over Gold orbs
+    this.physics.add.overlap(this.player, this.goldOrbs, (_playerObj, orbObj) => {
+      const orb = orbObj as GoldOrb;
+      if (!orb.active) return;
+      this.collectGold(orb);
     });
 
     // Ability projectiles (archer arrows) hit enemies
@@ -349,6 +387,13 @@ export class GameScene extends Phaser.Scene {
         stroke: '#000000', strokeThickness: 3,
       })
       .setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
+
+    this.goldText = this.add
+      .text(30, 30, '💰 0', {
+        fontSize: '18px', color: '#ffcc00',
+        fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
+      })
+      .setScrollFactor(0).setDepth(100);
   }
 
   private createBossBar() {
@@ -387,16 +432,32 @@ export class GameScene extends Phaser.Scene {
     if (this.isGameOver || this.isPaused || this.isLevelUpOpen) return;
     if (this.hitStop.consume(delta)) return;
 
+    // Update time-scale effects (must run every frame for smooth slow-mo)
+    this.timeScale.update(delta);
+
     this.player.update(delta);
     this.weaponSystem.update(delta, this.waveSystem.getEnemiesGroup());
     this.waveSystem.update(delta, this.player.x, this.player.y);
     this.abilitySystem.update(delta, this.waveSystem.getEnemiesGroup());
+
+    // Dodge trail particles
+    if (this.player.isDodging) {
+      const heroDef = HERO_DEFINITIONS[this.heroId];
+      const heroColor = heroDef?.color ?? 0x6688ff;
+      ParticleSystem.getInstance().dodgeTrail(this.player.x, this.player.y, heroColor);
+    }
 
     // Update XP orbs (pull toward player)
     const magneticStacks = this.player.getUpgradeStacks('magnetic');
     this.xpOrbs.getChildren().forEach((o) => {
       const orb = o as XpOrb;
       if (orb.active) orb.update(delta, this.player.x, this.player.y, magneticStacks);
+    });
+
+    // Update Gold orbs (pull toward player)
+    this.goldOrbs.getChildren().forEach((o) => {
+      const orb = o as GoldOrb;
+      if (orb.active) orb.update(delta, this.player.x, this.player.y);
     });
 
     // Boss HP bar tracking
@@ -586,6 +647,7 @@ export class GameScene extends Phaser.Scene {
     );
     store.setDodgeCooldown(this.player.dodgeCooldownRatio);
     store.setCombo(this.comboCount, Math.max(1, Math.floor(this.comboCount / 3)));
+    this.goldText.setText('💰 ' + useGameStore.getState().gold);
   }
 
   // ── Hit-stop ───────────────────────────────────────────────────────────────
@@ -644,6 +706,20 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private collectGold(orb: GoldOrb) {
+    const amount = orb.goldValue;
+    useGameStore.getState().addGold(amount);
+    saveManager.addGold(amount);
+    playSound('xpCollect', { pitch: 1.8 }); // higher pitch for gold
+    // Gold text popup
+    const txt = this.add.text(orb.x, orb.y - 10, `+${amount}g`, {
+      fontSize: '14px', color: '#ffcc00', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(200);
+    this.tweens.add({ targets: txt, y: orb.y - 50, alpha: 0, duration: 600, onComplete: () => txt.destroy() });
+    orb.destroy();
+  }
+
   // ── Event handlers ────────────────────────────────────────────────────────
 
   private handleEnemyDeath(enemy: Enemy) {
@@ -656,6 +732,20 @@ export class GameScene extends Phaser.Scene {
     // Trigger small hit-stop on kill
     this.hitStop.trigger(33); // 2 frames
 
+    // Death visual effects
+    const enemyDef = ENEMY_DEFINITIONS[enemy.enemyType as keyof typeof ENEMY_DEFINITIONS];
+    const deathColor = enemyDef?.color ?? 0xff4444;
+    ParticleSystem.getInstance().deathExplosion(enemy.x, enemy.y, deathColor);
+    this.screenShake.mediumShake();
+
+    // Enemy death flash: tint white briefly before destruction
+    if (enemy.active) {
+      enemy.setTint(0xffffff);
+      this.time.delayedCall(50, () => {
+        if (enemy.active) enemy.clearTint();
+      });
+    }
+
     // Combo
     this.comboCount++;
     this.comboTimer = this.COMBO_WINDOW;
@@ -663,6 +753,13 @@ export class GameScene extends Phaser.Scene {
     const bonusScore = Math.floor(enemy.scoreReward * multiplier);
     store.addScore(bonusScore);
     store.addKill();
+
+    // Time-scale effects for combos
+    if (this.comboCount >= 10) {
+      this.timeScale.comboSlow(this.comboCount);
+    } else if (this.comboCount >= 5) {
+      this.timeScale.killSlow();
+    }
 
     if (this.comboCount >= 3) this.showCombo(this.comboCount, multiplier);
 
@@ -680,6 +777,15 @@ export class GameScene extends Phaser.Scene {
     const healDropChance = 0.05 + (this.player.getUpgradeStacks('lifesteal') * 0.05);
     if (Math.random() < healDropChance) {
       this.spawnHealOrb(enemy.x, enemy.y);
+    }
+
+    // Gold drop: 40% base chance, increased by meta_gold_find upgrade
+    const goldFindBonus = saveManager.getMetaUpgradeLevel('meta_gold_find') * 0.1;
+    const goldDropChance = 0.4 + goldFindBonus;
+    if (Math.random() < goldDropChance) {
+      const baseGold = enemy.scoreReward >= 50 ? Phaser.Math.Between(5, 15) : Phaser.Math.Between(1, 3);
+      const goldOrb = new GoldOrb(this, { x: enemy.x + Phaser.Math.Between(-10, 10), y: enemy.y + Phaser.Math.Between(-10, 10), value: baseGold });
+      this.goldOrbs.add(goldOrb);
     }
 
     // If boss just died, hide bar
@@ -714,6 +820,7 @@ export class GameScene extends Phaser.Scene {
   private handleBossSpawn(bossType: EnemyType) {
     playSound('bossEntrance');
     this.hitStop.trigger(100); // ~6 frames for boss entrance
+    this.screenShake.bossShake();
 
     // Determine boss label and announcement text
     const bossLabels: Record<string, string> = {
@@ -984,6 +1091,7 @@ export class GameScene extends Phaser.Scene {
 
   private handleLevelUp(level: number) {
     playSound('levelUp');
+    ParticleSystem.getInstance().levelUpBurst(this.player.x, this.player.y);
     // Floating text
     const txt = this.add
       .text(this.player.x, this.player.y - 40, `LEVEL UP! ${level}`, {
@@ -1064,6 +1172,8 @@ export class GameScene extends Phaser.Scene {
     this.isGameOver = true;
 
     this.abilitySystem.stopAll();
+    this.screenShake.bossShake();
+    this.timeScale.bossKillSlow();
 
     const store = useGameStore.getState();
     store.endGame();
@@ -1085,6 +1195,8 @@ export class GameScene extends Phaser.Scene {
             recentDamage: this.player.damageHistory.slice(-5),
             maxHp: this.player.maxHp,
           },
+          upgradesChosen: Object.keys(this.player.upgrades) as string[],
+          evolvedWeapons: [...this.player.evolvedWeapons] as string[],
         });
       });
     });

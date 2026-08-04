@@ -91,3 +91,28 @@ export interface ActiveHero {
   activeWeapons: WeaponId[];
   statusEffects: StatusEffect[];
 }
+
+// ═══════════════════════════════════════════════════════
+// Run Summary
+// ═══════════════════════════════════════════════════════
+
+export interface RunStats {
+  wave: number;
+  score: number;
+  kills: number;
+  heroId: string;
+  timeSurvivedMs: number;
+  longestCombo: number;
+  upgradesChosen: string[];
+  evolvedWeapons: string[];
+  deathRecap: {
+    killedBy: string;
+    lastHitDamage: number;
+    recentDamage: { source: string; amount: number; time: number }[];
+  };
+  personalBests: {
+    wave: boolean;
+    score: boolean;
+    kills: boolean;
+  };
+}

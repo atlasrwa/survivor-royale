@@ -6,3 +6,8 @@ export * from './skillTrees';
 export * from './elites';
 export * from './evolutions';
 export * from './difficulty';
+export * from './metaProgression';
+export * from './achievements';
+export * from './dailyChallenge';
+export * from './cosmetics';
+export * from './milestones';

@@ -10,10 +10,10 @@ describe('WAVE_TEMPLATES', () => {
     expect(WAVE_TEMPLATES).toHaveLength(30);
   });
 
-  it('wave 10 is a boss wave with boss_titan', () => {
+  it('wave 10 is a boss wave with boss_goblin_king', () => {
     const wave10 = WAVE_TEMPLATES[9]!;
     expect(wave10.phase).toBe('boss');
-    expect(wave10.bossSpawn).toBe('boss_titan');
+    expect(wave10.bossSpawn).toBe('boss_goblin_king');
   });
 
   it('wave 20 is a boss wave with boss_hydra', () => {
