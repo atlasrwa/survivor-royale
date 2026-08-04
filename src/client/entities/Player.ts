@@ -65,6 +65,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   // Dodge state
   isDodging: boolean = false;
+  isAttacking: boolean = false;
   private dodgeCooldown: number;
   private dodgeDuration: number;
   private dodgeSpeed: number;
@@ -415,9 +416,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private updateVisuals() {
-    // Rotate sprite to face movement direction
-    if (this.facing.length() > 0) {
-      this.setRotation(Math.atan2(this.facing.y, this.facing.x) + Math.PI / 2);
+    // Flip sprite based on facing direction (preserves animation frames)
+    if (this.facing.x < -0.1) {
+      this.setFlipX(true);
+    } else if (this.facing.x > 0.1) {
+      this.setFlipX(false);
     }
 
     // Play animations if available (knight sprite sheets)
@@ -428,6 +431,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
       if (this.isDodging) {
         // Keep current frame during dodge (handled by alpha flash below)
+      } else if (this.isAttacking) {
+        // Don't interrupt attack animation — let it finish
       } else if (isMoving && currentAnim !== 'knight_run') {
         if (this.scene.anims.exists('knight_run')) {
           this.play('knight_run');

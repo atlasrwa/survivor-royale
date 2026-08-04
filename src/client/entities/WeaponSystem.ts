@@ -148,6 +148,15 @@ export class WeaponSystem {
 
     playSound('playerAttack', { pitch: 0.6 });
 
+    // Play attack animation
+    if (this.player.heroId === 'knight' && this.scene.anims.exists('knight_attack')) {
+      this.player.play('knight_attack');
+      this.player.isAttacking = true;
+      this.player.once('animationcomplete-knight_attack', () => {
+        this.player.isAttacking = false;
+      });
+    }
+
     // Visual: sweep arc graphic
     const arcGraphics = this.scene.add.graphics();
     arcGraphics.setDepth(15);

@@ -398,7 +398,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createBossBar() {
-    const bx = 640, by = 690;
+    const { width, height } = this.scale;
+    const bx = width / 2, by = height - 30;
     this.bossBarBg = this.add
       .rectangle(bx, by, 600, 22, 0x1a0000)
       .setStrokeStyle(2, 0xff2222)
@@ -419,8 +420,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createComboText() {
+    const { width, height } = this.scale;
     this.comboText = this.add
-      .text(1200, 360, '', {
+      .text(width - 20, height / 2, '', {
         fontSize: '28px', color: '#ffcc00',
         fontStyle: 'bold', stroke: '#000000', strokeThickness: 4,
       })
@@ -974,7 +976,8 @@ export class GameScene extends Phaser.Scene {
           // Temporarily boost enemy count and XP for one wave
           // We'll hack this via the player's XP gain multiplier for the next wave
           (this as any)._eliteChallengeActive = true;
-          const txt = this.add.text(640, 100, '💀 ELITE CHALLENGE ACTIVE', {
+          const { width: elW } = this.scale;
+          const txt = this.add.text(elW / 2, 100, '💀 ELITE CHALLENGE ACTIVE', {
             fontSize: '20px', color: '#ff4444', fontStyle: 'bold',
             stroke: '#000000', strokeThickness: 3,
           }).setOrigin(0.5).setScrollFactor(0).setDepth(105);

@@ -69,17 +69,17 @@ export default function GameUI() {
     <div id="ui-overlay" aria-label="Game HUD">
 
       {/* ── Bottom-left: HP + XP + Abilities ── */}
-      <div className="absolute bottom-6 left-6 w-72 space-y-2">
+      <div className="absolute bottom-2 left-2 sm:bottom-6 sm:left-6 w-44 sm:w-72 space-y-1 sm:space-y-2">
 
         {/* HP bar */}
         <div>
-          <div className="flex justify-between text-sm mb-1">
+          <div className="flex justify-between text-[10px] sm:text-sm mb-0.5 sm:mb-1">
             <span className="text-gray-300 font-semibold">HP</span>
             <span style={{ color: hpColor }} className="font-bold tabular-nums">
-              {Math.ceil(playerHp)} / {playerMaxHp}
+              {Math.ceil(playerHp)}/{playerMaxHp}
             </span>
           </div>
-          <div className="h-4 bg-gray-900 rounded overflow-hidden border border-gray-700">
+          <div className="h-3 sm:h-4 bg-gray-900 rounded overflow-hidden border border-gray-700">
             <div className="h-full rounded transition-all duration-100"
               style={{ width: `${hpPct}%`, backgroundColor: hpColor }} />
           </div>
@@ -87,72 +87,51 @@ export default function GameUI() {
 
         {/* XP bar */}
         <div>
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-blue-400 font-semibold">Level {playerLevel}</span>
-            <span className="text-gray-400 tabular-nums">{playerXp} / {playerXpToNextLevel} XP</span>
+          <div className="flex justify-between text-[9px] sm:text-xs mb-0.5">
+            <span className="text-blue-400 font-semibold">Lv{playerLevel}</span>
+            <span className="text-gray-400 tabular-nums">{playerXp}/{playerXpToNextLevel}</span>
           </div>
-          <div className="h-2 bg-gray-900 rounded overflow-hidden border border-gray-700">
+          <div className="h-1.5 sm:h-2 bg-gray-900 rounded overflow-hidden border border-gray-700">
             <div className="h-full rounded bg-blue-500 transition-all duration-200"
               style={{ width: `${xpPct}%` }} />
           </div>
         </div>
 
-        {/* Ability bars */}
-        <div className="flex gap-2 pt-1">
+        {/* Ability + Dodge — compact single row */}
+        <div className="flex gap-1 sm:gap-2 pt-0.5">
           {/* Q — Active */}
-          <div className="flex-1">
-            <div className="flex justify-between text-xs mb-1">
-              <span className={qReady ? 'text-yellow-300 font-bold' : 'text-gray-500'}>Q — Active</span>
-              {!qReady && <span className="text-gray-500 tabular-nums">{Math.ceil((1 - activeAbilityRatio) * 8)}s</span>}
+          <div className="flex-1 min-w-0">
+            <div className="text-[9px] sm:text-xs mb-0.5 text-center">
+              <span className={qReady ? 'text-yellow-300 font-bold' : 'text-gray-500'}>Q</span>
             </div>
-            <div className="h-3 bg-gray-900 rounded overflow-hidden border border-gray-600">
+            <div className="h-2 sm:h-3 bg-gray-900 rounded overflow-hidden border border-gray-600">
               <div className={`h-full rounded transition-all duration-100 ${qReady ? 'bg-yellow-400' : 'bg-yellow-700'}`}
                 style={{ width: `${activeAbilityRatio * 100}%` }} />
             </div>
           </div>
 
           {/* E — Ultimate */}
-          <div className="flex-1">
-            <div className="flex justify-between text-xs mb-1">
-              <span className={eReady ? 'text-purple-300 font-bold animate-pulse' : 'text-gray-500'}>E — Ultimate</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[9px] sm:text-xs mb-0.5 text-center">
+              <span className={eReady ? 'text-purple-300 font-bold' : 'text-gray-500'}>E</span>
             </div>
-            {/* Charge bar (kills) shown when not on cooldown */}
-            {ultimateRatio >= 1 ? (
-              <div className="h-3 bg-gray-900 rounded overflow-hidden border border-gray-600">
-                <div className={`h-full rounded transition-all duration-100 ${eReady ? 'bg-purple-400' : 'bg-purple-700'}`}
-                  style={{ width: `${ultimateChargeRatio * 100}%` }} />
-              </div>
-            ) : (
-              <div className="h-3 bg-gray-900 rounded overflow-hidden border border-gray-600">
-                <div className="h-full rounded bg-purple-900 transition-all duration-100"
-                  style={{ width: `${ultimateRatio * 100}%` }} />
-              </div>
-            )}
+            <div className="h-2 sm:h-3 bg-gray-900 rounded overflow-hidden border border-gray-600">
+              <div className={`h-full rounded transition-all duration-100 ${eReady ? 'bg-purple-400' : 'bg-purple-700'}`}
+                style={{ width: `${(ultimateRatio >= 1 ? ultimateChargeRatio : ultimateRatio) * 100}%` }} />
+            </div>
           </div>
-        </div>
 
-        {/* Dodge bar */}
-        <div className="pt-1">
-          <div className="flex justify-between text-xs mb-1">
-            <span className={dodgeReady ? 'text-cyan-300 font-bold' : 'text-gray-500'}>
-              Space — Dodge {dodgeReady ? '✓' : ''}
-            </span>
-            {!dodgeReady && (
-              <span className="text-gray-500 tabular-nums">
-                {((1 - dodgeCooldownRatio) * 0.8).toFixed(1)}s
+          {/* Dodge */}
+          <div className="flex-1 min-w-0">
+            <div className="text-[9px] sm:text-xs mb-0.5 text-center">
+              <span className={dodgeReady ? 'text-cyan-300 font-bold' : 'text-gray-500'}>
+                {dodgeReady ? '✓' : '⟳'}
               </span>
-            )}
-          </div>
-          <div className="h-3 bg-gray-900 rounded overflow-hidden border border-gray-600 relative">
-            <div
-              className={`h-full rounded transition-all duration-100 ${
-                dodgeReady ? 'bg-cyan-400 animate-pulse' : 'bg-cyan-700'
-              }`}
-              style={{ width: `${dodgeCooldownRatio * 100}%` }}
-            />
-            {dodgeReady && (
-              <div className="absolute inset-0 rounded bg-cyan-400 opacity-30 animate-ping" />
-            )}
+            </div>
+            <div className="h-2 sm:h-3 bg-gray-900 rounded overflow-hidden border border-gray-600 relative">
+              <div className={`h-full rounded transition-all duration-100 ${dodgeReady ? 'bg-cyan-400' : 'bg-cyan-700'}`}
+                style={{ width: `${dodgeCooldownRatio * 100}%` }} />
+            </div>
           </div>
         </div>
       </div>

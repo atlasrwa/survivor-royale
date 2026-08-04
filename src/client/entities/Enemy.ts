@@ -933,8 +933,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.lichShieldTimer = 5000; // 5 seconds of invulnerability
 
     // Teleport to center of arena (assumed 800x600 or similar)
-    const centerX = (this.scene.game.config.width as number) / 2;
-    const centerY = (this.scene.game.config.height as number) / 2;
+    const centerX = 1200; // ARENA_WIDTH / 2
+    const centerY = 1200; // ARENA_HEIGHT / 2
     this.setPosition(centerX, centerY);
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setVelocity(0, 0);
