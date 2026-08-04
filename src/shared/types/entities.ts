@@ -1,7 +1,19 @@
 // Core entity types shared across client and server
 
+/**
+ * Source of truth for hero identifiers.
+ * IMPORTANT: Must match the keys in HERO_DEFINITIONS (src/shared/constants/heroes.ts).
+ * When adding a new hero, add the id here AND in HERO_DEFINITIONS — TypeScript's
+ * `satisfies Record<HeroId, ...>` on that object will enforce completeness at compile time.
+ */
 export type HeroId = 'knight' | 'archer' | 'mage';
 
+/**
+ * Source of truth for enemy type identifiers.
+ * IMPORTANT: Must match the keys in ENEMY_DEFINITIONS (src/shared/constants/enemies.ts).
+ * When adding a new enemy type, add it here AND in ENEMY_DEFINITIONS — TypeScript's
+ * `satisfies Record<EnemyType, ...>` on that object will enforce completeness at compile time.
+ */
 export type EnemyType =
   | 'walker'
   | 'runner'

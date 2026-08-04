@@ -8,7 +8,7 @@ export interface EnemyDefinition {
   baseStats: EnemyStats;
 }
 
-export const ENEMY_DEFINITIONS: Record<EnemyType, EnemyDefinition> = {
+export const ENEMY_DEFINITIONS = {
   walker: {
     type: 'walker',
     name: 'Walker',
@@ -225,4 +225,4 @@ export const ENEMY_DEFINITIONS: Record<EnemyType, EnemyDefinition> = {
       knockbackResistance: 0.95,
     },
   },
-};
+} as const satisfies Record<EnemyType, EnemyDefinition>;

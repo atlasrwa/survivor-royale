@@ -4,7 +4,7 @@
  */
 
 import type { RunStats } from '@/shared/types/entities';
-import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
+import { getHeroDefinition } from '@/shared/constants/heroes';
 
 const HASHTAGS = '#SurvivorRoyale #CryptoGaming #Web3Gaming';
 const GAME_URL = 'https://survivor-royale.gg';
@@ -77,7 +77,7 @@ function formatTime(ms: number): string {
  * Get hero name from heroId.
  */
 function getHeroName(heroId: string): string {
-  return HERO_DEFINITIONS[heroId]?.name ?? 'Unknown';
+  return getHeroDefinition(heroId)?.name ?? 'Unknown';
 }
 
 /**

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { useGameStore } from '@/client/store/gameStore';
-import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
+import { getHeroDefinition } from '@/shared/constants/heroes';
 import { UPGRADE_DEFINITIONS } from '@/shared/constants/upgrades';
 import { WEAPON_EVOLUTIONS } from '@/shared/constants/evolutions';
 import { generateShareCard, shareCard } from '@/client/utils/ShareCard';
@@ -40,7 +40,7 @@ export class RunSummaryScene extends Phaser.Scene {
     let yOffset = 0;
 
     // ── Header ──────────────────────────────────────────────────────────
-    const hero = HERO_DEFINITIONS[data.heroId];
+    const hero = getHeroDefinition(data.heroId);
     const heroName = hero?.name ?? 'Unknown';
     const heroColor = hero ? '#' + hero.color.toString(16).padStart(6, '0') : '#4488ff';
 

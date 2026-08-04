@@ -1,5 +1,6 @@
 import type { WaveConfig } from '../types/waves';
 import type { EnemyType } from '../types/entities';
+import { ENEMY_DEFINITIONS } from './enemies';
 
 /** Base wave templates - difficulty multiplier increases per wave */
 export const WAVE_TEMPLATES: WaveConfig[] = [
@@ -431,6 +432,8 @@ export const WAVE_TEMPLATES: WaveConfig[] = [
 /**
  * Generate a wave config for any wave number beyond the template list.
  * Scales difficulty linearly. Includes all enemy types for variety.
+ * Enemy types and boss rotation are derived from ENEMY_DEFINITIONS keys,
+ * so adding new enemies/bosses automatically includes them in procedural waves.
  */
 export function generateWaveConfig(waveNumber: number): WaveConfig {
   if (waveNumber <= WAVE_TEMPLATES.length) {
@@ -442,30 +445,58 @@ export function generateWaveConfig(waveNumber: number): WaveConfig {
   const baseMultiplier = 1 + (waveNumber - 1) * 0.15;
   const baseCount = Math.floor(waveNumber * 2.5);
 
+  // Derive boss types from ENEMY_DEFINITIONS keys (any key starting with 'boss_')
+  const allEnemyTypes = Object.keys(ENEMY_DEFINITIONS) as EnemyType[];
+  const bossTypes = allEnemyTypes.filter(t => t.startsWith('boss_'));
+  const regularTypes = allEnemyTypes.filter(t => !t.startsWith('boss_'));
+
   // Rotate boss types for procedural boss waves
   let bossType: EnemyType | undefined;
-  if (isBossWave) {
-    const bossRotation: EnemyType[] = ['boss_goblin_king', 'boss_hydra', 'boss_lich'];
-    const bossIndex = (Math.floor(waveNumber / 10) - 1) % bossRotation.length;
-    bossType = bossRotation[bossIndex];
+  if (isBossWave && bossTypes.length > 0) {
+    const bossIndex = (Math.floor(waveNumber / 10) - 1) % bossTypes.length;
+    bossType = bossTypes[bossIndex];
   }
+
+  // Spawn weight config for regular enemies (scales with wave number)
+  const spawnWeights: Record<string, { countFn: (wave: number, base: number) => number; delay: number; spawnRadius: number }> = {
+    walker:   { countFn: (_w, base) => base, delay: 0, spawnRadius: 0.55 },
+    runner:   { countFn: (_w, base) => Math.floor(base * 0.6), delay: 600, spawnRadius: 0.6 },
+    tank:     { countFn: (w) => Math.floor(w / 2.5), delay: 0, spawnRadius: 0.5 },
+    ranged:   { countFn: (w) => Math.floor(w / 2), delay: 1500, spawnRadius: 0.7 },
+    flyer:    { countFn: (w) => Math.floor(w / 2.5), delay: 2000, spawnRadius: 0.65 },
+    splitter: { countFn: (w) => Math.floor(w / 3), delay: 1200, spawnRadius: 0.55 },
+    shielder: { countFn: (w) => Math.floor(w / 3), delay: 800, spawnRadius: 0.5 },
+    healer:   { countFn: (w) => Math.floor(w / 5), delay: 1500, spawnRadius: 0.7 },
+    exploder: { countFn: (w) => Math.floor(w / 4), delay: 2800, spawnRadius: 0.55 },
+  };
+
+  // Build spawn groups from regular enemy types that have spawn weights defined.
+  // Any new regular enemy type not in spawnWeights gets a default scaling.
+  const spawnGroups = regularTypes.map((type, idx) => {
+    const weight = spawnWeights[type];
+    if (weight) {
+      return {
+        type,
+        count: weight.countFn(waveNumber, baseCount),
+        delay: weight.delay,
+        spawnRadius: weight.spawnRadius,
+      };
+    }
+    // Default scaling for new enemy types not yet in the weight table
+    return {
+      type,
+      count: Math.floor(waveNumber / 3),
+      delay: 1000 + idx * 400,
+      spawnRadius: 0.6,
+    };
+  }).filter(g => g.count > 0);
 
   return {
     waveNumber,
     phase: isBossWave ? 'boss' : 'active',
     duration: 0,
     difficultyMultiplier: baseMultiplier,
-    spawnGroups: [
-      { type: 'walker', count: baseCount, delay: 0, spawnRadius: 0.55 },
-      { type: 'runner', count: Math.floor(baseCount * 0.6), delay: 600, spawnRadius: 0.6 },
-      { type: 'tank', count: Math.floor(waveNumber / 2.5), delay: 0, spawnRadius: 0.5 },
-      { type: 'ranged', count: Math.floor(waveNumber / 2), delay: 1500, spawnRadius: 0.7 },
-      { type: 'flyer', count: Math.floor(waveNumber / 2.5), delay: 2000, spawnRadius: 0.65 },
-      { type: 'splitter', count: Math.floor(waveNumber / 3), delay: 1200, spawnRadius: 0.55 },
-      { type: 'shielder', count: Math.floor(waveNumber / 3), delay: 800, spawnRadius: 0.5 },
-      { type: 'healer', count: Math.floor(waveNumber / 5), delay: 1500, spawnRadius: 0.7 },
-      { type: 'exploder', count: Math.floor(waveNumber / 4), delay: 2800, spawnRadius: 0.55 },
-    ],
+    spawnGroups,
     bossSpawn: bossType,
   };
 }

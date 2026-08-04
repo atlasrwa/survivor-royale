@@ -1,4 +1,4 @@
-import type { HeroStats } from '../types/entities';
+import type { HeroId, HeroStats } from '../types/entities';
 
 export interface HeroDefinition {
   id: string;
@@ -8,7 +8,7 @@ export interface HeroDefinition {
   color: number; // Phaser hex color for placeholder sprite
 }
 
-export const HERO_DEFINITIONS: Record<string, HeroDefinition> = {
+export const HERO_DEFINITIONS = {
   knight: {
     id: 'knight',
     name: 'Knight',
@@ -81,7 +81,15 @@ export const HERO_DEFINITIONS: Record<string, HeroDefinition> = {
       xpToNextLevel: 100,
     },
   },
-} as const;
+} as const satisfies Record<HeroId, HeroDefinition>;
+
+/**
+ * Safely look up a hero definition by id string.
+ * Returns undefined if the id is not a valid HeroId.
+ */
+export function getHeroDefinition(id: string): HeroDefinition | undefined {
+  return (HERO_DEFINITIONS as Record<string, HeroDefinition>)[id];
+}
 
 /** XP required to reach a given level (1-indexed). Linear curve keeps level-ups coming steadily. */
 export function xpForLevel(level: number): number {

@@ -4,7 +4,7 @@
  */
 
 import type { RunStats } from '@/shared/types/entities';
-import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
+import { getHeroDefinition } from '@/shared/constants/heroes';
 import { getRandomTweet, getDiscordMessage, getGenericShareText } from './ShareMessages';
 
 const CARD_WIDTH = 1200;
@@ -126,7 +126,7 @@ export async function generateShareCard(stats: RunStats): Promise<string> {
   canvas.height = CARD_HEIGHT;
   const ctx = canvas.getContext('2d')!;
 
-  const hero = HERO_DEFINITIONS[stats.heroId];
+  const hero = getHeroDefinition(stats.heroId);
   const heroColor = hero ? phaserColorToHex(hero.color) : '#4488ff';
   const heroName = hero?.name ?? 'Unknown';
 
