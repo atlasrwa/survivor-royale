@@ -855,9 +855,10 @@ export class GameScene extends Phaser.Scene {
         this.bossBarLabel.setText(label).setVisible(true);
 
         // Boss entrance announcement
+        const { width: baw, height: bah } = this.scale;
         const txt = this.add
-          .text(640, 360, announcement, {
-            fontSize: '48px', color: '#ff2222',
+          .text(baw / 2, bah / 2, announcement, {
+            fontSize: Math.min(48, baw * 0.06) + 'px', color: '#ff2222',
             fontStyle: 'bold', stroke: '#000000', strokeThickness: 6,
           })
           .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);

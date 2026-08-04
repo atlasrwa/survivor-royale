@@ -161,6 +161,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Apply skill tree effects from saved unlocks
     this.applySkillTreeEffects();
 
+    // Start idle animation if available
+    if (this.heroId === 'knight' && this.scene.anims.exists('knight_idle')) {
+      this.play('knight_idle');
+    }
+
     // Input setup
     this.setupInput();
   }
@@ -424,7 +429,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Play animations if available (knight sprite sheets)
-    if (this.heroId === 'knight' && this.anims?.isPlaying !== undefined) {
+    if (this.heroId === 'knight' && this.scene.anims.exists('knight_idle')) {
       const body = this.body as Phaser.Physics.Arcade.Body;
       const isMoving = body.velocity.length() > 10;
       const currentAnim = this.anims.currentAnim?.key ?? '';

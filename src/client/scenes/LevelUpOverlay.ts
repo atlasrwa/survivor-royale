@@ -27,14 +27,23 @@ export class LevelUpOverlay extends Phaser.Scene {
 
     const { width, height } = this.scale;
     const cx = width / 2;
+    const cy = height / 2;
+
+    // Responsive sizing
+    const isSmall = height < 500;
+    const titleSize = isSmall ? '32px' : '48px';
+    const subtitleSize = isSmall ? '14px' : '20px';
+    const cardH = isSmall ? 180 : 280;
+    const cardW = isSmall ? 160 : 240;
+    const cardY = cy + (isSmall ? 20 : 30);
 
     // Dark overlay
-    this.add.rectangle(cx, height / 2, width, height, 0x000000, 0.85);
+    this.add.rectangle(cx, cy, width, height, 0x000000, 0.85);
 
     // Title
     this.add
-      .text(cx, 80, `LEVEL ${data.playerLevel}`, {
-        fontSize: '48px',
+      .text(cx, isSmall ? cy - 100 : 80, `LEVEL ${data.playerLevel}`, {
+        fontSize: titleSize,
         color: '#ffcc44',
         fontStyle: 'bold',
         stroke: '#000000',
@@ -43,8 +52,8 @@ export class LevelUpOverlay extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 130, 'Choose an upgrade', {
-        fontSize: '20px',
+      .text(cx, isSmall ? cy - 70 : 130, 'Choose an upgrade', {
+        fontSize: subtitleSize,
         color: '#aabbcc',
       })
       .setOrigin(0.5);
@@ -53,78 +62,56 @@ export class LevelUpOverlay extends Phaser.Scene {
     this.choices = rollUpgrades(data.ownedUpgrades, 3);
 
     if (this.choices.length === 0) {
-      // No upgrades available - show continue button
       this.add
-        .text(cx, 300, 'No upgrades available', {
-          fontSize: '28px',
+        .text(cx, cy, 'No upgrades available', {
+          fontSize: '24px',
           color: '#778899',
           fontStyle: 'bold',
         })
         .setOrigin(0.5);
 
       const btnBg = this.add
-        .rectangle(cx, 400, 300, 60, 0x334455)
+        .rectangle(cx, cy + 60, 260, 52, 0x334455)
         .setStrokeStyle(3, 0x4488ff)
         .setInteractive({ useHandCursor: true });
 
       this.add
-        .text(cx, 400, 'CONTINUE', {
-          fontSize: '24px',
+        .text(cx, cy + 60, 'CONTINUE', {
+          fontSize: '22px',
           color: '#ffffff',
           fontStyle: 'bold',
         })
         .setOrigin(0.5);
 
-      btnBg.on('pointerover', () => {
-        btnBg.setStrokeStyle(4, 0xffffff);
-      });
-      btnBg.on('pointerout', () => {
-        btnBg.setStrokeStyle(3, 0x4488ff);
-      });
-      btnBg.on('pointerdown', () => {
-        this.dismiss();
-      });
+      btnBg.on('pointerdown', () => this.dismiss());
 
-      // Also allow any key to dismiss
       const kb = this.input.keyboard;
       if (kb) {
-        const anyKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        anyKey.once('down', () => this.dismiss());
-        const enterKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-        enterKey.once('down', () => this.dismiss());
-        const oneKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
-        oneKey.once('down', () => this.dismiss());
+        kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).once('down', () => this.dismiss());
+        kb.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER).once('down', () => this.dismiss());
       }
     } else {
-      // Create upgrade cards
-      const cardSpacing = 280;
-      const startX = cx - (this.choices.length - 1) * cardSpacing / 2;
+      // Create upgrade cards - responsive spacing
+      const maxCardSpacing = Math.min(cardW + 40, (width - 40) / this.choices.length);
+      const startX = cx - (this.choices.length - 1) * maxCardSpacing / 2;
 
       this.choices.forEach((upgradeId, i) => {
         const def = UPGRADE_DEFINITIONS[upgradeId];
         const stacks = data.ownedUpgrades[upgradeId] ?? 0;
-        this.createUpgradeCard(startX + i * cardSpacing, 320, def, stacks, i + 1, () => {
+        this.createUpgradeCard(startX + i * maxCardSpacing, cardY, def, stacks, i + 1, cardW, cardH, () => {
           this.selectUpgrade(upgradeId);
         });
       });
 
-      // Keyboard shortcuts: 1, 2, 3
+      // Keyboard shortcuts
       const kb = this.input.keyboard;
       if (kb) {
-        const keyCodes = [
-          Phaser.Input.Keyboard.KeyCodes.ONE,
-          Phaser.Input.Keyboard.KeyCodes.TWO,
-          Phaser.Input.Keyboard.KeyCodes.THREE,
-        ];
-
-        keyCodes.forEach((keyCode, i) => {
+        [Phaser.Input.Keyboard.KeyCodes.ONE, Phaser.Input.Keyboard.KeyCodes.TWO, Phaser.Input.Keyboard.KeyCodes.THREE].forEach((keyCode, i) => {
           if (i < this.choices.length) {
             const key = kb.addKey(keyCode);
             key.once('down', () => {
               const choice = this.choices[i];
-              if (choice !== undefined) {
-                this.selectUpgrade(choice);
-              }
+              if (choice !== undefined) this.selectUpgrade(choice);
             });
             this.keyboardKeys.push(key);
           }
@@ -132,7 +119,6 @@ export class LevelUpOverlay extends Phaser.Scene {
       }
     }
 
-    // Fade in
     this.cameras.main.fadeIn(200, 0, 0, 0);
   }
 
@@ -142,11 +128,14 @@ export class LevelUpOverlay extends Phaser.Scene {
     def: { name: string; description: string; color: number; maxStacks: number },
     currentStacks: number,
     index: number,
+    cardW: number,
+    cardH: number,
     onClick: () => void
   ) {
     const container = this.add.container(x, y);
-    const cardW = 240;
-    const cardH = 280;
+    const isSmall = cardH < 220;
+    const fontSize = isSmall ? '16px' : '22px';
+    const descSize = isSmall ? '12px' : '16px';
 
     // Background
     const bg = this.add
@@ -155,8 +144,8 @@ export class LevelUpOverlay extends Phaser.Scene {
 
     // Keyboard shortcut hint
     const shortcutText = this.add
-      .text(-cardW / 2 + 12, -cardH / 2 + 8, `[${index}]`, {
-        fontSize: '14px',
+      .text(-cardW / 2 + 8, -cardH / 2 + 6, `[${index}]`, {
+        fontSize: '12px',
         color: '#ffcc44',
         fontStyle: 'bold',
       })
@@ -164,8 +153,8 @@ export class LevelUpOverlay extends Phaser.Scene {
 
     // Name
     const nameText = this.add
-      .text(0, -100, def.name, {
-        fontSize: '22px',
+      .text(0, -cardH / 3, def.name, {
+        fontSize,
         color: '#ffffff',
         fontStyle: 'bold',
         wordWrap: { width: cardW - 20 },
@@ -175,38 +164,40 @@ export class LevelUpOverlay extends Phaser.Scene {
 
     // Description
     const descText = this.add
-      .text(0, -40, def.description, {
-        fontSize: '16px',
+      .text(0, isSmall ? -10 : -40, def.description, {
+        fontSize: descSize,
         color: '#ccddee',
-        wordWrap: { width: cardW - 30 },
+        wordWrap: { width: cardW - 20 },
         align: 'center',
       })
       .setOrigin(0.5);
 
     // Stack indicator
     const stackText = this.add
-      .text(0, 40, `${currentStacks} / ${def.maxStacks}`, {
-        fontSize: '14px',
+      .text(0, isSmall ? 20 : 40, `${currentStacks}/${def.maxStacks}`, {
+        fontSize: '12px',
         color: '#778899',
       })
       .setOrigin(0.5);
 
     // Level bar
-    const barW = 180;
-    const barH = 8;
-    const barBg = this.add.rectangle(0, 60, barW, barH, 0x333344).setOrigin(0.5);
+    const barW = cardW - 40;
+    const barH = 6;
+    const barBg = this.add.rectangle(0, isSmall ? 35 : 60, barW, barH, 0x333344).setOrigin(0.5);
     const ratio = currentStacks / def.maxStacks;
     const barFill = this.add
-      .rectangle(-barW / 2, 60, barW * ratio, barH, def.color)
+      .rectangle(-barW / 2, isSmall ? 35 : 60, barW * ratio, barH, def.color)
       .setOrigin(0, 0.5);
 
     // Select button
+    const btnW = Math.min(140, cardW - 30);
+    const btnY = isSmall ? 60 : 110;
     const btnBg = this.add
-      .rectangle(0, 110, 160, 44, def.color)
+      .rectangle(0, btnY, btnW, 40, def.color)
       .setStrokeStyle(2, 0xffffff);
     const btnText = this.add
-      .text(0, 110, 'SELECT', {
-        fontSize: '18px',
+      .text(0, btnY, 'SELECT', {
+        fontSize: isSmall ? '14px' : '18px',
         color: '#ffffff',
         fontStyle: 'bold',
       })

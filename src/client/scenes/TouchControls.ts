@@ -60,6 +60,26 @@ export class TouchControls extends Phaser.Scene {
     this.createJoystick(width, height);
     this.createButtons(height);
     this.setupInput();
+
+    // Listen for resize events to reposition controls
+    this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
+      this.repositionControls(gameSize.width, gameSize.height);
+    });
+  }
+
+  private repositionControls(width: number, height: number) {
+    // Reposition joystick
+    const baseX = 100;
+    const baseY = height - 120;
+    this.joystickBase.setPosition(baseX, baseY);
+    this.joystickThumb.setPosition(baseX, baseY);
+    this.joystickCenter.set(baseX, baseY);
+
+    // Reposition buttons
+    const rightX = width - 80;
+    this.dodgeBtn.setPosition(rightX, height - 80);
+    this.activeBtn.setPosition(rightX - 50, height - 160);
+    this.ultimateBtn.setPosition(rightX, height - 240);
   }
 
   private createJoystick(_width: number, height: number) {

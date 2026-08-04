@@ -13,52 +13,36 @@ export class PauseMenu extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
     const cx = width / 2;
+    const cy = height / 2;
 
     // Dark overlay
-    this.add.rectangle(cx, height / 2, width, height, 0x000000, 0.75);
+    this.add.rectangle(cx, cy, width, height, 0x000000, 0.75);
 
     // Title
+    const titleSize = height < 500 ? '36px' : '64px';
     this.add
-      .text(cx, 150, 'PAUSED', {
-        fontSize: '64px',
+      .text(cx, cy - height * 0.3, 'PAUSED', {
+        fontSize: titleSize,
         color: '#4488ff',
         fontStyle: 'bold',
         stroke: '#000033',
-        strokeThickness: 6,
+        strokeThickness: 4,
       })
       .setOrigin(0.5);
 
-    // Controls reminder
-    const controls = [
-      'WASD / Arrow Keys — Move',
-      'Space — Dodge',
-      'ESC — Pause / Resume',
-      '',
-      'Auto-attacks nearest enemy',
-      'Collect XP orbs to level up',
-    ];
+    // Buttons - evenly spaced in center
+    const btnGap = Math.min(70, height * 0.12);
+    const btnStartY = cy - btnGap;
 
-    controls.forEach((line, i) => {
-      this.add
-        .text(cx, 260 + i * 30, line, {
-          fontSize: line === '' ? '12px' : '18px',
-          color: '#aabbcc',
-        })
-        .setOrigin(0.5);
-    });
-
-    // Resume button
-    this.createButton(cx, 480, 'RESUME', 0x44dd88, () => {
+    this.createButton(cx, btnStartY, 'RESUME', 0x44dd88, () => {
       this.resumeGame();
     });
 
-    // Settings button
-    this.createButton(cx, 550, 'SETTINGS', 0x334466, () => {
+    this.createButton(cx, btnStartY + btnGap, 'SETTINGS', 0x334466, () => {
       this.scene.launch('SettingsScene');
     });
 
-    // Quit to menu button
-    this.createButton(cx, 620, 'QUIT TO MENU', 0xaa3333, () => {
+    this.createButton(cx, btnStartY + btnGap * 2, 'QUIT TO MENU', 0xaa3333, () => {
       this.quitToMenu();
     });
 

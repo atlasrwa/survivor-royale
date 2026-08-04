@@ -122,12 +122,13 @@ export class MainMenuScene extends Phaser.Scene {
       this.startGame();
     });
 
-    // Smaller secondary buttons
-    this.createButton(cx - 100, 430, 'SETTINGS', 0x334466, () => {
+    // Smaller secondary buttons - position relative to height
+    const secBtnY = Math.min(430, height - 80);
+    this.createButton(cx - 100, secBtnY, 'SETTINGS', 0x334466, () => {
       this.scene.launch('SettingsScene');
     }, false, true);
 
-    this.createButton(cx + 100, 430, 'SKILLS', 0x443366, () => {
+    this.createButton(cx + 100, secBtnY, 'SKILLS', 0x443366, () => {
       this.scene.start('SkillTreeScene', { heroId: this.selectedHero });
     }, true, true);
 
