@@ -56,6 +56,16 @@ export class GameScene extends Phaser.Scene {
   private countdownText!: Phaser.GameObjects.Text;
   private goldText!: Phaser.GameObjects.Text;
 
+  // Player HP bar
+  private playerHpBarBg!: Phaser.GameObjects.Rectangle;
+  private playerHpBarFill!: Phaser.GameObjects.Rectangle;
+  private playerHpText!: Phaser.GameObjects.Text;
+
+  // Player XP bar
+  private playerXpBarBg!: Phaser.GameObjects.Rectangle;
+  private playerXpBarFill!: Phaser.GameObjects.Rectangle;
+  private playerLevelText!: Phaser.GameObjects.Text;
+
   // Boss health bar
   private bossBarBg!: Phaser.GameObjects.Rectangle;
   private bossBarFill!: Phaser.GameObjects.Rectangle;
@@ -395,6 +405,57 @@ export class GameScene extends Phaser.Scene {
         fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
       })
       .setScrollFactor(0).setDepth(100);
+
+    // ── Player HP Bar (below gold text) ──────────────────────────────────
+    const hpBarX = 30;
+    const hpBarY = 58;
+    const hpBarWidth = 120;
+    const hpBarHeight = 12;
+
+    this.playerHpBarBg = this.add
+      .rectangle(hpBarX, hpBarY, hpBarWidth, hpBarHeight, 0x222222)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    this.playerHpBarFill = this.add
+      .rectangle(hpBarX, hpBarY, hpBarWidth, hpBarHeight, 0xff2222)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(101);
+
+    this.playerHpText = this.add
+      .text(hpBarX + hpBarWidth / 2, hpBarY + hpBarHeight / 2, 'HP: 0/0', {
+        fontSize: '10px', color: '#ffffff',
+        fontStyle: 'bold', stroke: '#000000', strokeThickness: 2,
+      })
+      .setOrigin(0.5, 0.5)
+      .setScrollFactor(0)
+      .setDepth(102);
+
+    // ── Player XP Bar (below HP bar) ─────────────────────────────────────
+    const xpBarY = hpBarY + hpBarHeight + 4;
+
+    this.playerXpBarBg = this.add
+      .rectangle(hpBarX, xpBarY, hpBarWidth, hpBarHeight, 0x222222)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    this.playerXpBarFill = this.add
+      .rectangle(hpBarX, xpBarY, 0, hpBarHeight, 0xffcc00)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(101);
+
+    this.playerLevelText = this.add
+      .text(hpBarX + hpBarWidth / 2, xpBarY + hpBarHeight / 2, 'LVL 1', {
+        fontSize: '10px', color: '#ffffff',
+        fontStyle: 'bold', stroke: '#000000', strokeThickness: 2,
+      })
+      .setOrigin(0.5, 0.5)
+      .setScrollFactor(0)
+      .setDepth(102);
   }
 
   private createBossBar() {
@@ -506,6 +567,20 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.countdownText.setText(`Enemies: ${ws.enemiesRemaining}`).setVisible(true);
     }
+
+    // ── Update Player HP Bar ──────────────────────────────────────────────
+    const hpRatio = Math.max(0, Math.min(1, this.player.hp / this.player.maxHp));
+    this.playerHpBarFill.setDisplaySize(120 * hpRatio, 12);
+    this.playerHpBarBg.setVisible(true);
+    this.playerHpText.setText(`HP: ${this.player.hp}/${this.player.maxHp}`);
+
+    // ── Update Player XP Bar ──────────────────────────────────────────────
+    const xpRatio = this.player.xpToNextLevel > 0
+      ? Math.max(0, Math.min(1, this.player.xp / this.player.xpToNextLevel))
+      : 0;
+    this.playerXpBarFill.setDisplaySize(120 * xpRatio, 12);
+    this.playerXpBarBg.setVisible(true);
+    this.playerLevelText.setText(`LVL ${this.player.level}`);
   }
 
   private updateBossBar() {

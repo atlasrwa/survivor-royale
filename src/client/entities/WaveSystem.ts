@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Enemy } from '@/client/entities/Enemy';
-import { WAVE_TEMPLATES, generateWaveConfig, WAVE_COUNTDOWN_MS, ENEMY_COUNT_SCALE } from '@/shared/constants/waves';
+import { WAVE_TEMPLATES, generateWaveConfig, WAVE_COUNTDOWN_MS, WAVE_COUNTDOWN_SUBSEQUENT_MS, ENEMY_COUNT_SCALE } from '@/shared/constants/waves';
 import { rollEliteModifier } from '@/shared/constants/elites';
 import type { EliteModifier } from '@/shared/constants/elites';
 import type { DifficultyModifiers } from '@/shared/constants/difficulty';
@@ -120,7 +120,7 @@ export class WaveSystem {
   private beginNextWave() {
     this.currentWave++;
     this.state = 'countdown';
-    this.countdown = WAVE_COUNTDOWN_MS;
+    this.countdown = this.currentWave === 1 ? WAVE_COUNTDOWN_MS : WAVE_COUNTDOWN_SUBSEQUENT_MS;
     this.pendingSpawns = [];
     this.totalSpawned = 0;
     this.enemiesRemaining = 0;

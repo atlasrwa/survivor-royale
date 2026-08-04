@@ -1328,13 +1328,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const bx = this.x - barW / 2;
     const by = this.y - (ENEMY_DEFINITIONS[this.enemyType].size + 6);
 
+    // Border/outline for visibility (golden for elites, dark grey for normal)
+    if (this.eliteModifier) {
+      this.hpBar.lineStyle(2, 0xffd700, 1);
+    } else {
+      this.hpBar.lineStyle(1, 0x333333, 0.9);
+    }
+    this.hpBar.strokeRect(bx - 1, by - 1, barW + 2, barH + 2);
+
     // Background
     this.hpBar.fillStyle(0x000000, 0.7);
     this.hpBar.fillRect(bx, by, barW, barH);
 
-    // HP fill
-    const color = ratio > 0.5 ? 0x44ff44 : ratio > 0.25 ? 0xffaa00 : 0xff2222;
-    this.hpBar.fillStyle(color, 1);
+    // HP fill (red proportional to current/max HP)
+    this.hpBar.fillStyle(0xff2222, 1);
     this.hpBar.fillRect(bx, by, barW * ratio, barH);
 
     // Elite indicator - small colored diamond above HP bar

@@ -3,61 +3,61 @@ import type { EnemyType } from '../types/entities';
 
 /** Base wave templates - difficulty multiplier increases per wave */
 export const WAVE_TEMPLATES: WaveConfig[] = [
-  // Wave 1 - intro: just walkers
+  // Wave 1 - intro: just walkers, gentle start to let player orient
   {
     waveNumber: 1,
     phase: 'active',
     duration: 0,
     difficultyMultiplier: 1.0,
     spawnGroups: [
-      { type: 'walker', count: 8, delay: 0, spawnRadius: 0.55 },
-      { type: 'walker', count: 7, delay: 4000, spawnRadius: 0.6 },
+      { type: 'walker', count: 4, delay: 0, spawnRadius: 0.55 },
+      { type: 'walker', count: 3, delay: 3000, spawnRadius: 0.6 },
     ],
   },
-  // Wave 2
+  // Wave 2 - introduces runners
   {
     waveNumber: 2,
     phase: 'active',
     duration: 0,
     difficultyMultiplier: 1.1,
     spawnGroups: [
-      { type: 'walker', count: 18, delay: 0, spawnRadius: 0.55 },
-      { type: 'runner', count: 5, delay: 2000, spawnRadius: 0.6 },
+      { type: 'walker', count: 10, delay: 0, spawnRadius: 0.55 },
+      { type: 'runner', count: 3, delay: 2000, spawnRadius: 0.6 },
     ],
   },
-  // Wave 3
+  // Wave 3 - slight pressure
   {
     waveNumber: 3,
     phase: 'active',
     duration: 0,
     difficultyMultiplier: 1.2,
     spawnGroups: [
-      { type: 'walker', count: 22, delay: 0, spawnRadius: 0.55 },
-      { type: 'runner', count: 10, delay: 1500, spawnRadius: 0.6 },
+      { type: 'walker', count: 12, delay: 0, spawnRadius: 0.55 },
+      { type: 'runner', count: 5, delay: 1500, spawnRadius: 0.6 },
     ],
   },
-  // Wave 4
+  // Wave 4 - introduces tanks
   {
     waveNumber: 4,
     phase: 'active',
     duration: 0,
     difficultyMultiplier: 1.3,
     spawnGroups: [
-      { type: 'walker', count: 20, delay: 0, spawnRadius: 0.55 },
-      { type: 'tank', count: 3, delay: 0, spawnRadius: 0.5 },
-      { type: 'runner', count: 10, delay: 2000, spawnRadius: 0.6 },
+      { type: 'walker', count: 12, delay: 0, spawnRadius: 0.55 },
+      { type: 'tank', count: 2, delay: 0, spawnRadius: 0.5 },
+      { type: 'runner', count: 6, delay: 2000, spawnRadius: 0.6 },
     ],
   },
-  // Wave 5
+  // Wave 5 - first ranged enemies
   {
     waveNumber: 5,
     phase: 'active',
     duration: 0,
     difficultyMultiplier: 1.4,
     spawnGroups: [
-      { type: 'walker', count: 25, delay: 0, spawnRadius: 0.55 },
-      { type: 'runner', count: 14, delay: 800, spawnRadius: 0.6 },
-      { type: 'ranged', count: 6, delay: 1500, spawnRadius: 0.7 },
+      { type: 'walker', count: 15, delay: 0, spawnRadius: 0.55 },
+      { type: 'runner', count: 8, delay: 800, spawnRadius: 0.6 },
+      { type: 'ranged', count: 3, delay: 1500, spawnRadius: 0.7 },
     ],
   },
   // Wave 6
@@ -471,6 +471,8 @@ export function generateWaveConfig(waveNumber: number): WaveConfig {
 }
 
 export const WAVE_COUNTDOWN_MS = 3000;
+/** Countdown for waves after the first (slightly shorter to maintain pace) */
+export const WAVE_COUNTDOWN_SUBSEQUENT_MS = 2500;
 export const ARENA_WIDTH = 2400;
 export const ARENA_HEIGHT = 2400;
 
@@ -478,4 +480,4 @@ export const ARENA_HEIGHT = 2400;
  * Global enemy count multiplier applied to all waves.
  * Increase this to make waves feel more packed.
  */
-export const ENEMY_COUNT_SCALE = 1.35;
+export const ENEMY_COUNT_SCALE = 1.0;
