@@ -16,6 +16,7 @@ import { playSound, SoundManager } from '@/client/utils/SoundManager';
 import { HitStop } from '@/client/utils/HitStop';
 import { ScreenShake } from '@/client/utils/ScreenShake';
 import { TimeScale } from '@/client/utils/TimeScale';
+import { SpatialHash } from '@/client/utils/SpatialHash';
 import { saveManager } from '@/client/utils/SaveManager';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '@/shared/constants/waves';
 import type { UpgradeId } from '@/shared/constants/upgrades';
@@ -28,6 +29,8 @@ import { DIFFICULTY_TIERS, type DifficultyTier, type DifficultyModifiers } from 
 interface GameSceneData {
   heroId: HeroId;
   difficulty?: DifficultyTier;
+  dailyRun?: boolean;
+  seed?: number;
 }
 
 /**
@@ -43,6 +46,7 @@ export class GameScene extends Phaser.Scene {
   private screenShake!: ScreenShake;
   private timeScale!: TimeScale;
   private minimap!: Minimap;
+  private enemySpatialHash!: SpatialHash<any>;
 
   // Groups
   private enemyProjectiles!: Phaser.Physics.Arcade.Group;
@@ -55,6 +59,8 @@ export class GameScene extends Phaser.Scene {
   private waveText!: Phaser.GameObjects.Text;
   private countdownText!: Phaser.GameObjects.Text;
   private goldText!: Phaser.GameObjects.Text;
+  private runStartTime: number = 0;
+  private timerText!: Phaser.GameObjects.Text;
 
   // Player HP bar
   private playerHpBarBg!: Phaser.GameObjects.Rectangle;
@@ -87,6 +93,10 @@ export class GameScene extends Phaser.Scene {
   private aimIndicator!: Phaser.GameObjects.Graphics;
   private aimModeText!: Phaser.GameObjects.Text;
 
+  // Milestone aura/glow
+  private playerAura!: Phaser.GameObjects.Graphics;
+  private auraLevel: number = 0;
+
   // Pause key
   private escKey!: Phaser.Input.Keyboard.Key;
 
@@ -94,6 +104,8 @@ export class GameScene extends Phaser.Scene {
   private heroId: HeroId = 'knight';
   private difficulty: DifficultyTier = 'normal';
   private difficultyMods!: DifficultyModifiers;
+  private dailyRun: boolean = false;
+  private seed: number | undefined = undefined;
   private isGameOver: boolean = false;
   private isPaused: boolean = false;
   private isLevelUpOpen: boolean = false;
@@ -106,6 +118,8 @@ export class GameScene extends Phaser.Scene {
     this.heroId = data.heroId ?? 'knight';
     this.difficulty = data.difficulty ?? 'normal';
     this.difficultyMods = DIFFICULTY_TIERS[this.difficulty];
+    this.dailyRun = data.dailyRun ?? false;
+    this.seed = data.seed;
     this.isGameOver = false;
     this.isPaused = false;
     this.isLevelUpOpen = false;
@@ -120,6 +134,7 @@ export class GameScene extends Phaser.Scene {
     ParticleSystem.initialize(this);
     this.screenShake = new ScreenShake(this.cameras.main);
     this.timeScale = new TimeScale(this);
+    this.runStartTime = Date.now();
 
     this.createArena();
 
@@ -192,6 +207,7 @@ export class GameScene extends Phaser.Scene {
     this.createBossBar();
     this.createComboText();
     this.minimap = new Minimap(this);
+    this.enemySpatialHash = new SpatialHash(64);
     this.orbitShieldGraphics = this.add.graphics().setDepth(12);
 
     // Aim mode indicator: crosshair that shows auto-target vs manual aim
@@ -200,6 +216,9 @@ export class GameScene extends Phaser.Scene {
       fontSize: '10px', color: '#88aacc', fontStyle: 'bold',
       stroke: '#000000', strokeThickness: 2,
     }).setOrigin(0.5).setDepth(201).setAlpha(0.7);
+
+    // Milestone aura (below player depth 10)
+    this.playerAura = this.add.graphics().setDepth(9);
 
     this.physics.world.setBounds(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
     this.player.setCollideWorldBounds(true);
@@ -399,12 +418,29 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
+    // Daily Run badge
+    if (this.dailyRun) {
+      this.add
+        .text(width / 2 + 100, 35, '☀️ DAILY', {
+          fontSize: '14px', color: '#ffcc00',
+          fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
+        })
+        .setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+    }
+
     this.goldText = this.add
       .text(30, 30, '💰 0', {
         fontSize: '18px', color: '#ffcc00',
         fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
       })
       .setScrollFactor(0).setDepth(100);
+
+    this.timerText = this.add
+      .text(width - 30, 30, '00:00', {
+        fontSize: '16px', color: '#ccddee',
+        stroke: '#000000', strokeThickness: 2,
+      })
+      .setOrigin(1, 0).setScrollFactor(0).setDepth(100);
 
     // ── Player HP Bar (below gold text) ──────────────────────────────────
     const hpBarX = 30;
@@ -500,6 +536,11 @@ export class GameScene extends Phaser.Scene {
     this.timeScale.update(delta);
 
     this.player.update(delta);
+    this.enemySpatialHash.clear();
+    this.waveSystem.getEnemiesGroup().getChildren().forEach((obj) => {
+      const e = obj as any;
+      if (e.active) this.enemySpatialHash.insert(e);
+    });
     this.weaponSystem.update(delta, this.waveSystem.getEnemiesGroup());
     this.waveSystem.update(delta, this.player.x, this.player.y);
     this.abilitySystem.update(delta, this.waveSystem.getEnemiesGroup());
@@ -553,6 +594,9 @@ export class GameScene extends Phaser.Scene {
 
     this.updateHud();
     this.syncStore();
+
+    // Milestone power-up aura
+    this.updatePlayerAura();
   }
 
   private updateHud() {
@@ -581,6 +625,17 @@ export class GameScene extends Phaser.Scene {
     this.playerXpBarFill.setDisplaySize(120 * xpRatio, 12);
     this.playerXpBarBg.setVisible(true);
     this.playerLevelText.setText(`LVL ${this.player.level}`);
+
+    // ── Update Survival Timer ─────────────────────────────────────────────
+    const elapsed = Date.now() - this.runStartTime;
+    this.timerText.setText(this.formatTime(elapsed));
+  }
+
+  private formatTime(ms: number): string {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }
 
   private updateBossBar() {
@@ -638,8 +693,8 @@ export class GameScene extends Phaser.Scene {
       // Check collision with enemies (only every 3rd orb per frame to spread cost)
       if (i % 3 !== Math.floor(now / 50) % 3) continue;
 
-      this.waveSystem.getEnemiesGroup().getChildren().forEach((obj) => {
-        const enemy = obj as Enemy;
+      const nearby = this.enemySpatialHash.query(orbX, orbY, orbSize + 20);
+      nearby.forEach((enemy) => {
         if (!enemy.active || enemy.hp <= 0) return;
 
         // Skip if this enemy was recently hit
@@ -663,6 +718,125 @@ export class GameScene extends Phaser.Scene {
         }
       }
     }
+  }
+
+  /**
+   * Draw a pulsing aura/glow around the player at wave milestones.
+   */
+  private updatePlayerAura() {
+    this.playerAura.clear();
+    if (this.auraLevel === 0) return;
+
+    const px = this.player.x;
+    const py = this.player.y;
+    const pulse = Math.sin(Date.now() / 500);
+
+    if (this.auraLevel === 1) {
+      // Level 1 (wave 10): small blue glow, radius 30, alpha 0.1-0.3
+      const alpha = 0.2 + pulse * 0.1; // oscillates 0.1 to 0.3
+      this.playerAura.fillStyle(0x4488ff, alpha);
+      this.playerAura.fillCircle(px, py, 30);
+      this.playerAura.fillStyle(0x66aaff, alpha * 0.6);
+      this.playerAura.fillCircle(px, py, 20);
+      this.playerAura.fillStyle(0x88ccff, alpha * 0.3);
+      this.playerAura.fillCircle(px, py, 12);
+    } else if (this.auraLevel === 2) {
+      // Level 2 (wave 20): medium gold glow, radius 40, alpha 0.15-0.4, rotating particles
+      const alpha = 0.275 + pulse * 0.125; // oscillates 0.15 to 0.4
+      this.playerAura.fillStyle(0xffcc00, alpha);
+      this.playerAura.fillCircle(px, py, 40);
+      this.playerAura.fillStyle(0xffdd44, alpha * 0.6);
+      this.playerAura.fillCircle(px, py, 28);
+      this.playerAura.fillStyle(0xffee88, alpha * 0.3);
+      this.playerAura.fillCircle(px, py, 16);
+
+      // Rotating particles
+      const particleCount = 6;
+      const rotAngle = Date.now() / 800;
+      for (let i = 0; i < particleCount; i++) {
+        const angle = rotAngle + (i / particleCount) * Math.PI * 2;
+        const particleX = px + Math.cos(angle) * 35;
+        const particleY = py + Math.sin(angle) * 35;
+        this.playerAura.fillStyle(0xffee44, alpha * 0.8);
+        this.playerAura.fillCircle(particleX, particleY, 3);
+      }
+    } else if (this.auraLevel === 3) {
+      // Level 3 (wave 30): large purple/white glow, radius 50, alpha 0.2-0.5, particle ring
+      const alpha = 0.35 + pulse * 0.15; // oscillates 0.2 to 0.5
+      this.playerAura.fillStyle(0xaa44ff, alpha);
+      this.playerAura.fillCircle(px, py, 50);
+      this.playerAura.fillStyle(0xcc66ff, alpha * 0.7);
+      this.playerAura.fillCircle(px, py, 36);
+      this.playerAura.fillStyle(0xffffff, alpha * 0.4);
+      this.playerAura.fillCircle(px, py, 22);
+
+      // Particle ring
+      const particleCount = 10;
+      const rotAngle = Date.now() / 600;
+      for (let i = 0; i < particleCount; i++) {
+        const angle = rotAngle + (i / particleCount) * Math.PI * 2;
+        const radius = 44 + Math.sin(Date.now() / 300 + i) * 4;
+        const particleX = px + Math.cos(angle) * radius;
+        const particleY = py + Math.sin(angle) * radius;
+        const particleColor = i % 2 === 0 ? 0xffffff : 0xcc88ff;
+        this.playerAura.fillStyle(particleColor, alpha * 0.9);
+        this.playerAura.fillCircle(particleX, particleY, 3.5);
+      }
+    }
+  }
+
+  /**
+   * Trigger a milestone glow effect with dramatic announcement.
+   */
+  private triggerMilestoneGlow(level: number) {
+    this.auraLevel = level;
+
+    // Announcement text based on level
+    const announcements = ['POWER SURGE!', 'ASCENSION!', 'TRANSCENDENCE!'];
+    const colors = ['#4488ff', '#ffcc00', '#cc66ff'];
+    const announcement = announcements[level - 1] ?? 'POWER SURGE!';
+    const color = colors[level - 1] ?? '#ffffff';
+
+    // Brief camera flash
+    const flashColors: [number, number, number][] = [
+      [68, 136, 255],   // blue
+      [255, 204, 0],    // gold
+      [204, 102, 255],  // purple
+    ];
+    const [fr, fg, fb] = flashColors[level - 1] ?? [255, 255, 255];
+    this.cameras.main.flash(400, fr, fg, fb, false);
+
+    // Dramatic announcement text
+    const { width: sw, height: sh } = this.scale;
+    const txt = this.add
+      .text(sw / 2, sh / 2 - 60, `⚡ ${announcement} ⚡`, {
+        fontSize: '36px', color: color,
+        fontStyle: 'bold', stroke: '#000000', strokeThickness: 5,
+      })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(250).setAlpha(0).setScale(0.5);
+
+    this.tweens.add({
+      targets: txt,
+      alpha: 1,
+      scale: 1.2,
+      duration: 300,
+      ease: 'Back.Out',
+      onComplete: () => {
+        this.tweens.add({
+          targets: txt,
+          alpha: 0,
+          scale: 1.5,
+          y: sh / 2 - 120,
+          duration: 1200,
+          delay: 1000,
+          ease: 'Power2',
+          onComplete: () => txt.destroy(),
+        });
+      },
+    });
+
+    // Sound effect
+    playSound('levelUp');
   }
 
   /**
@@ -733,6 +907,8 @@ export class GameScene extends Phaser.Scene {
   triggerHitStop(durationMs: number = 50) {
     this.hitStop.trigger(durationMs);
   }
+
+  getSpatialHash() { return this.enemySpatialHash; }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -1146,6 +1322,11 @@ export class GameScene extends Phaser.Scene {
     // Clear elite challenge after one wave
     (this as any)._eliteChallengeActive = false;
 
+    // Milestone power-up aura triggers
+    if (wave === 10) this.triggerMilestoneGlow(1);
+    if (wave === 20) this.triggerMilestoneGlow(2);
+    if (wave === 30) this.triggerMilestoneGlow(3);
+
     const { width: sw, height: sh } = this.scale;
     const txt = this.add
       .text(sw / 2, sh / 2, `WAVE ${wave}`, {
@@ -1284,11 +1465,18 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(1500, () => {
       this.cameras.main.fadeOut(800, 0, 0, 0);
       this.time.delayedCall(800, () => {
+        // Record daily run result if applicable
+        if (this.dailyRun && this.seed != null) {
+          saveManager.recordDailyRun(this.seed, this.waveSystem.currentWave, store.score);
+        }
+
         this.scene.start('GameOverScene', {
           wave: this.waveSystem.currentWave,
           score: store.score,
           kills: store.enemiesKilled,
           heroId: this.heroId,
+          dailyRun: this.dailyRun,
+          seed: this.seed,
           deathRecap: {
             killedBy: this.player.lastDamageSource,
             lastHitDamage: this.player.lastDamageAmount,

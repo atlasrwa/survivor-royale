@@ -3,6 +3,7 @@ import { useGameStore } from '@/client/store/gameStore';
 import { HERO_DEFINITIONS } from '@/shared/constants/heroes';
 import { DIFFICULTY_TIERS, ALL_DIFFICULTY_TIERS, type DifficultyTier } from '@/shared/constants/difficulty';
 import { playSound } from '@/client/utils/SoundManager';
+import { SeededRng } from '@/client/utils/SeededRng';
 import type { HeroId } from '@/shared/types/entities';
 
 /**
@@ -122,8 +123,13 @@ export class MainMenuScene extends Phaser.Scene {
       this.startGame();
     });
 
+    // Daily Run button (gold accent, below play button)
+    this.createButton(cx, 425, '☀️ DAILY RUN', 0xcc8800, () => {
+      this.startDailyRun();
+    }, true, true);
+
     // Smaller secondary buttons - position relative to height
-    const secBtnY = Math.min(430, height - 80);
+    const secBtnY = Math.min(470, height - 80);
     this.createButton(cx - 100, secBtnY, 'SETTINGS', 0x334466, () => {
       this.scene.launch('SettingsScene');
     }, false, true);
@@ -304,5 +310,16 @@ export class MainMenuScene extends Phaser.Scene {
     const store = useGameStore.getState();
     store.startGame(this.selectedHero, 'solo');
     this.scene.start('GameScene', { heroId: this.selectedHero, difficulty: this.selectedDifficulty });
+  }
+
+  private startDailyRun() {
+    const store = useGameStore.getState();
+    store.startGame(this.selectedHero, 'solo');
+    this.scene.start('GameScene', {
+      heroId: this.selectedHero,
+      difficulty: 'normal',
+      dailyRun: true,
+      seed: SeededRng.dailySeed(),
+    });
   }
 }

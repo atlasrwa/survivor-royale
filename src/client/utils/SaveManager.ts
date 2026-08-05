@@ -718,6 +718,36 @@ export class SaveManager {
     }
     return this.data.heroes[heroId]!;
   }
+
+  // ═══════════════════════════════════════════════════════
+  // Daily Seeded Runs
+  // ═══════════════════════════════════════════════════════
+
+  recordDailyRun(seed: number, wave: number, score: number): void {
+    if (typeof window === 'undefined') return;
+    const key = `sr_daily_${seed}`;
+    const existing = this.getDailyRunResult(seed);
+    // Only save if this is the best result for the seed
+    if (!existing || score > existing.score) {
+      localStorage.setItem(key, JSON.stringify({ wave, score }));
+    }
+  }
+
+  getDailyRunResult(seed: number): { wave: number; score: number } | null {
+    if (typeof window === 'undefined') return null;
+    const key = `sr_daily_${seed}`;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.wave === 'number' && typeof parsed.score === 'number') {
+        return { wave: parsed.wave, score: parsed.score };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 export const saveManager = SaveManager.instance;
