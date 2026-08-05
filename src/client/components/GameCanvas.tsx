@@ -25,16 +25,30 @@ export default function GameCanvas() {
     if (gameInstance) return;
     if (!containerRef.current) return;
 
+    const dpr = window.devicePixelRatio || 1;
+
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       parent: containerRef.current,
       backgroundColor: '#0a0a1a',
+      // Crisp rendering: disable antialiasing for sharp text/pixels
+      pixelArt: false, // keep false for smooth text; antialias handles sharpness
+      antialias: true,
+      roundPixels: true,
       scale: {
-        mode: Phaser.Scale.RESIZE,
+        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: '100%',
-        height: '100%',
+        width: 960,
+        height: 540,
         expandParent: true,
+        zoom: 1 / dpr, // Phaser renders at internal res; CSS scales down
+      },
+      // Render at native device resolution for sharp text on high-DPI screens
+      render: {
+        pixelArt: false,
+        antialias: true,
+        antialiasGL: true,
+        desynchronized: false,
       },
       physics: {
         default: 'arcade',

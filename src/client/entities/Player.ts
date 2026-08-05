@@ -570,7 +570,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private applyLevelUpBonus() {
     // Flattened power curve: smaller per-level bonuses keep late-game challenging
     this.maxHp = Math.floor(this.maxHp * 1.05); // was 1.1
-    this.hp = Math.min(this.maxHp, this.hp + Math.floor(this.maxHp * 0.2));
+    this.hp = Math.min(this.maxHp, this.hp + Math.floor(this.maxHp * 0.1));
     this.speed *= 1.01; // was 1.03
     this.speed = Math.min(this.speed, this.baseSpeed * 1.5); // cap lower
     this.attackDamage *= 1.05; // was 1.08

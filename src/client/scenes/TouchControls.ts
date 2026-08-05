@@ -32,6 +32,10 @@ export class TouchControls extends Phaser.Scene {
   activeAbilityPressed: boolean = false;
   ultimatePressed: boolean = false;
 
+  // Pause button
+  pausePressed: boolean = false;
+  private pauseBtn!: Phaser.GameObjects.Arc;
+
   // Manual aim (hold on right side)
   manualAimActive: boolean = false;
   manualAimAngle: number = 0;
@@ -132,6 +136,17 @@ export class TouchControls extends Phaser.Scene {
     this.add.text(rightX, ultY, 'E', {
       fontSize: '18px', color: '#aa44ff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(501);
+
+    // Pause button (top-right)
+    const pauseX = this.scale.width - 50;
+    const pauseY = 50;
+    this.pauseBtn = this.add.circle(pauseX, pauseY, 22, 0x555555, 0.6)
+      .setStrokeStyle(2, 0x999999, 0.8)
+      .setDepth(500)
+      .setInteractive();
+    this.add.text(pauseX, pauseY, '⏸', {
+      fontSize: '18px',
+    }).setOrigin(0.5).setDepth(501);
   }
 
   private setupInput() {
@@ -211,6 +226,14 @@ export class TouchControls extends Phaser.Scene {
         this.ultimateBtn.setFillStyle(0x8822cc, 0.5);
       });
     });
+
+    this.pauseBtn.on('pointerdown', () => {
+      this.pausePressed = true;
+      this.pauseBtn.setFillStyle(0x555555, 0.9);
+      this.time.delayedCall(100, () => {
+        this.pauseBtn.setFillStyle(0x555555, 0.6);
+      });
+    });
   }
 
   private updateJoystickPosition(pointer: Phaser.Input.Pointer) {
@@ -258,9 +281,23 @@ export class TouchControls extends Phaser.Scene {
     }
   }
 
+  hide() {
+    this.scene.setVisible(false);
+    this.input.enabled = false;
+    this.moveVector.set(0, 0);
+    this.manualAimActive = false;
+  }
+
+  show() {
+    this.scene.setVisible(true);
+    this.input.enabled = true;
+  }
+
   update() {
     if (!this.isMobile) return;
-    // Update button opacity based on cooldowns (would need store access)
-    // For now just keep them visible
+    const gameScene = this.scene.get('GameScene');
+    if (!gameScene || !gameScene.scene.isActive()) {
+      this.hide();
+    }
   }
 }

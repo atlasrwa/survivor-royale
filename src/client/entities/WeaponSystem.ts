@@ -252,9 +252,9 @@ export class WeaponSystem {
         enemy.applyBurnEffect(Math.floor(this.player.attackDamage * 0.3), 3000);
       }
 
-      // Knight innate: melee lifesteal (heals 2% max HP per enemy hit + skill tree bonus)
+      // Knight innate: melee lifesteal (heals 1% max HP per enemy hit + skill tree bonus)
       if (this.player.heroId === 'knight') {
-        const healPct = 0.02 + this.player.meleeLifestealBonus;
+        const healPct = 0.01 + this.player.meleeLifestealBonus;
         const healAmt = Math.floor(this.player.maxHp * healPct);
         this.player.heal(healAmt);
       }

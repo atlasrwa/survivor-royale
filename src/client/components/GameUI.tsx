@@ -36,7 +36,7 @@ export default function GameUI() {
   if (phase === 'menu') {
     return (
       <div id="ui-overlay" aria-label="Menu HUD">
-        <div className="absolute top-4 right-4 z-50">
+        <div className="absolute bottom-4 right-4 z-50">
           <WalletButton />
         </div>
       </div>

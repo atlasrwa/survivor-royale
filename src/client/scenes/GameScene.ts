@@ -530,6 +530,15 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number) {
     if (this.isGameOver || this.isPaused || this.isLevelUpOpen) return;
+
+    // Check touch pause button
+    const touchScene = this.scene.get('TouchControls') as any;
+    if (touchScene?.pausePressed) {
+      touchScene.pausePressed = false;
+      this.togglePause();
+      return;
+    }
+
     if (this.hitStop.consume(delta)) return;
 
     // Update time-scale effects (must run every frame for smooth slow-mo)
@@ -939,7 +948,7 @@ export class GameScene extends Phaser.Scene {
     // Pickup overlap with player
     this.physics.add.overlap(this.player, healOrb, () => {
       if (!healOrb.active) return;
-      const healAmt = Math.floor(this.player.maxHp * 0.1);
+      const healAmt = Math.floor(this.player.maxHp * 0.05);
       this.player.heal(healAmt);
       playSound('comboHit', { pitch: 1.5 });
       // Green floating number
@@ -1027,8 +1036,8 @@ export class GameScene extends Phaser.Scene {
     }
     this.spawnXpOrb(enemy.x, enemy.y, xpReward);
 
-    // Healing orb drop: base 5% chance + 5% per 'lifesteal' upgrade stack
-    const healDropChance = 0.05 + (this.player.getUpgradeStacks('lifesteal') * 0.05);
+    // Healing orb drop: base 2% chance + 3% per 'lifesteal' upgrade stack
+    const healDropChance = 0.02 + (this.player.getUpgradeStacks('lifesteal') * 0.03);
     if (Math.random() < healDropChance) {
       this.spawnHealOrb(enemy.x, enemy.y);
     }
@@ -1140,20 +1149,33 @@ export class GameScene extends Phaser.Scene {
   /**
    * Risk/Reward event: offer the player a choice between waves.
    * Events: Elite Challenge (more enemies for 2x XP), Cursed Upgrade, or Safe Bonus.
+   * Responsive layout: stacks vertically on small screens (< 600px width).
    */
   private offerRiskRewardEvent(wave: number) {
     this.isLevelUpOpen = true; // pause the game
 
-    const { width, height } = this.cameras.main;
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
     const cx = width / 2;
     const cy = height / 2;
+    const isSmallScreen = width < 600;
+
+    // Responsive card dimensions
+    const cardW = Math.min(260, width * 0.42);
+    const cardH = Math.min(160, height * 0.28);
+
+    // Responsive font sizes
+    const titleFontSize = Math.min(28, width * 0.04) + 'px';
+    const nameFontSize = Math.min(16, width * 0.025) + 'px';
+    const descFontSize = Math.min(12, width * 0.018) + 'px';
 
     // Semi-transparent backdrop
     const backdrop = this.add.rectangle(cx, cy, width, height, 0x000000, 0.6)
       .setScrollFactor(0).setDepth(300);
 
-    const titleText = this.add.text(cx, cy - 120, '⚡ MID-RUN EVENT', {
-      fontSize: '32px', color: '#ffcc00', fontStyle: 'bold',
+    const titleY = isSmallScreen ? cy - cardH - 30 : cy - cardH * 0.5 - 40;
+    const titleText = this.add.text(cx, titleY, '⚡ MID-RUN EVENT', {
+      fontSize: titleFontSize, color: '#ffcc00', fontStyle: 'bold',
       stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(301);
 
@@ -1162,26 +1184,40 @@ export class GameScene extends Phaser.Scene {
     const buttons: Phaser.GameObjects.Container[] = [];
 
     events.forEach((event, idx) => {
-      const bx = cx + (idx === 0 ? -160 : 160);
-      const by = cy + 20;
+      let bx: number;
+      let by: number;
 
-      const bg = this.add.rectangle(bx, by, 280, 180, event.color, 0.8)
-        .setStrokeStyle(2, 0xffffff).setInteractive({ useHandCursor: true });
-      const name = this.add.text(bx, by - 60, event.icon + ' ' + event.name, {
-        fontSize: '18px', color: '#ffffff', fontStyle: 'bold',
+      if (isSmallScreen) {
+        // Vertical stack: both cards centered, stacked with 10px gap
+        bx = cx;
+        const totalHeight = cardH * 2 + 10;
+        const startY = cy - totalHeight / 2 + cardH / 2;
+        by = startY + idx * (cardH + 10);
+      } else {
+        // Side by side with responsive spacing
+        const gap = Math.min(20, width * 0.03);
+        bx = cx + (idx === 0 ? -(cardW / 2 + gap / 2) : (cardW / 2 + gap / 2));
+        by = cy + 20;
+      }
+
+      const bg = this.add.rectangle(bx, by, cardW, cardH, event.color, 0.8)
+        .setStrokeStyle(2, 0xffffff).setInteractive({ useHandCursor: true })
+        .setScrollFactor(0);
+      const name = this.add.text(bx, by - cardH * 0.33, event.icon + ' ' + event.name, {
+        fontSize: nameFontSize, color: '#ffffff', fontStyle: 'bold',
         stroke: '#000000', strokeThickness: 3,
-      }).setOrigin(0.5);
-      const desc = this.add.text(bx, by - 20, event.description, {
-        fontSize: '13px', color: '#dddddd', wordWrap: { width: 240 },
+      }).setOrigin(0.5).setScrollFactor(0);
+      const desc = this.add.text(bx, by - cardH * 0.08, event.description, {
+        fontSize: descFontSize, color: '#dddddd', wordWrap: { width: cardW - 20 },
         stroke: '#000000', strokeThickness: 2,
-      }).setOrigin(0.5);
-      const risk = this.add.text(bx, by + 40, event.risk, {
-        fontSize: '12px', color: '#ff8888',
+      }).setOrigin(0.5).setScrollFactor(0);
+      const risk = this.add.text(bx, by + cardH * 0.3, event.risk, {
+        fontSize: descFontSize, color: '#ff8888',
         stroke: '#000000', strokeThickness: 2,
-      }).setOrigin(0.5);
+      }).setOrigin(0.5).setScrollFactor(0);
 
       const container = this.add.container(0, 0, [bg, name, desc, risk])
-        .setDepth(302);
+        .setDepth(302).setScrollFactor(0);
 
       bg.on('pointerdown', () => {
         event.apply();
@@ -1200,7 +1236,6 @@ export class GameScene extends Phaser.Scene {
 
     // Set scroll factor on all container children
     buttons.forEach(container => {
-      container.setScrollFactor(0);
       container.each((child: Phaser.GameObjects.GameObject) => {
         if ('setScrollFactor' in child) {
           (child as any).setScrollFactor(0);
@@ -1372,6 +1407,7 @@ export class GameScene extends Phaser.Scene {
 
     // Open level-up upgrade selection
     this.isLevelUpOpen = true;
+    (this.scene.get('TouchControls') as any)?.hide?.();
 
     const overlay = this.scene.get('LevelUpOverlay') as
       import('@/client/scenes/LevelUpOverlay').LevelUpOverlay;
@@ -1401,6 +1437,7 @@ export class GameScene extends Phaser.Scene {
       evoOverlay.setOnSelect((evoId: EvolvedWeaponId) => {
         this.player.applyEvolution(evoId);
         this.isLevelUpOpen = false;
+        (this.scene.get('TouchControls') as any)?.show?.();
       });
 
       this.scene.launch('EvolutionOverlay', {
@@ -1408,6 +1445,7 @@ export class GameScene extends Phaser.Scene {
       });
     } else {
       this.isLevelUpOpen = false;
+      (this.scene.get('TouchControls') as any)?.show?.();
     }
   }
 
@@ -1451,6 +1489,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.isGameOver = true;
+    this.scene.stop('TouchControls');
 
     this.abilitySystem.stopAll();
     this.screenShake.bossShake();
@@ -1475,6 +1514,7 @@ export class GameScene extends Phaser.Scene {
           score: store.score,
           kills: store.enemiesKilled,
           heroId: this.heroId,
+          difficulty: this.difficulty,
           dailyRun: this.dailyRun,
           seed: this.seed,
           deathRecap: {

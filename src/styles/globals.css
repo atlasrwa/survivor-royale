@@ -43,6 +43,10 @@ body {
 #game-container canvas {
   display: block;
   margin: 0 auto;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* UI overlay sits on top of canvas */

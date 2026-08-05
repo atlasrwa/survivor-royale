@@ -21,6 +21,7 @@ interface GameOverData {
   score: number;
   kills: number;
   heroId: HeroId;
+  difficulty?: string;
   deathRecap?: DeathRecapData;
   upgradesChosen?: string[];
   evolvedWeapons?: string[];
@@ -250,7 +251,7 @@ export class GameOverScene extends Phaser.Scene {
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.time.delayedCall(300, () => {
           gameStore.startGame(heroId, 'solo');
-          this.scene.start('GameScene', { heroId });
+          this.scene.start('GameScene', { heroId, difficulty: data.difficulty ?? 'normal' });
         });
       }
     );
@@ -311,7 +312,7 @@ export class GameOverScene extends Phaser.Scene {
         const gameStore = useGameStore.getState();
         gameStore.resetGame();
         gameStore.startGame(heroId, 'solo');
-        this.scene.start('GameScene', { heroId });
+        this.scene.start('GameScene', { heroId, difficulty: data.difficulty ?? 'normal' });
       });
       kb.once('keydown-ESC', () => {
         useGameStore.getState().resetGame();

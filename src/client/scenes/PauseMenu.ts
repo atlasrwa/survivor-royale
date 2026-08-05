@@ -63,7 +63,7 @@ export class PauseMenu extends Phaser.Scene {
     onClick: () => void
   ) {
     const bg = this.add
-      .rectangle(x, y, 260, 52, color)
+      .rectangle(x, y, 260, 56, color)
       .setStrokeStyle(2, 0xffffff)
       .setInteractive({ useHandCursor: true });
 

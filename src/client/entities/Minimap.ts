@@ -5,7 +5,7 @@ import { Enemy } from './Enemy';
 export class Minimap {
   private graphics: Phaser.GameObjects.Graphics;
   private scene: Phaser.Scene;
-  private readonly SIZE = 140;
+  private readonly SIZE = 100;
   private readonly PADDING = 10;
   private readonly X: number; // top-right position
   private readonly Y: number;
@@ -15,8 +15,8 @@ export class Minimap {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     // Position in top-right corner
-    this.X = scene.scale.width - this.SIZE - this.PADDING - 60; // offset from edge to avoid overlap with score
-    this.Y = this.PADDING + 80; // below wave counter
+    this.X = scene.scale.width - this.SIZE - this.PADDING; // right edge
+    this.Y = scene.scale.height - this.SIZE - this.PADDING - 10; // bottom-right for mobile
     this.scaleX = this.SIZE / ARENA_WIDTH;
     this.scaleY = this.SIZE / ARENA_HEIGHT;
 
