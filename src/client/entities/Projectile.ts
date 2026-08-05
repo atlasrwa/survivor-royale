@@ -26,6 +26,12 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
   /** Set of enemies this projectile has already hit (prevents multi-hit on pierce) */
   private hitEnemies: Set<Phaser.GameObjects.GameObject> = new Set();
 
+  /** When true, this projectile seeks the nearest enemy each frame */
+  homing: boolean = false;
+  /** Reference to enemies group for homing behavior */
+  homingEnemiesGroup: Phaser.Physics.Arcade.Group | null = null;
+  private homingSpeed: number = 250;
+
   constructor(scene: Phaser.Scene, config: ProjectileConfig) {
     super(scene, config.x, config.y, config.textureKey);
     scene.add.existing(this);
@@ -54,6 +60,34 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.lifetime -= delta;
     if (this.lifetime <= 0) {
       this.destroy();
+      return;
+    }
+
+    // Homing behavior: adjust velocity toward nearest enemy each frame
+    if (this.homing && this.homingEnemiesGroup) {
+      let nearestEnemy: Phaser.GameObjects.GameObject | null = null;
+      let nearestDist = Infinity;
+
+      this.homingEnemiesGroup.getChildren().forEach((obj) => {
+        const enemy = obj as Phaser.Physics.Arcade.Sprite;
+        if (!enemy.active) return;
+        const dist = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestEnemy = enemy;
+        }
+      });
+
+      if (nearestEnemy) {
+        const target = nearestEnemy as Phaser.Physics.Arcade.Sprite;
+        const angleToTarget = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        body.setVelocity(
+          Math.cos(angleToTarget) * this.homingSpeed,
+          Math.sin(angleToTarget) * this.homingSpeed
+        );
+        this.setRotation(angleToTarget + Math.PI / 2);
+      }
     }
   }
 

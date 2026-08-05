@@ -57,8 +57,8 @@ export const UPGRADE_DEFINITIONS: Record<UpgradeId, UpgradeDefinition> = {
   },
   defense: {
     id: 'defense',
-    name: '🛡️ Thick Skin',
-    description: '+5 defense (flat damage reduction)',
+    name: '🛡️ Toughened Hide',
+    description: '+4% damage reduction (max 75%)',
     color: 0x4488ff,
     maxStacks: 6,
   },

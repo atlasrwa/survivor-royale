@@ -73,6 +73,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private readonly FLYER_ORBIT_RADIUS = 175;
   private readonly FLYER_SWOOP_INTERVAL = 3000;
 
+  // Tank lunge state
+  private tankLungeTimer: number = 0;
+  private tankLunging: boolean = false;
+  private tankPausing: boolean = false;
+  private tankPauseTimer: number = 0;
+
   // Shielder state
   private shieldGraphics!: Phaser.GameObjects.Graphics;
   private shieldHitsFromBehind: number = 0;
@@ -150,7 +156,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.maxHp = Math.floor(def.baseStats.maxHp * m * hpMult);
     this.hp = this.maxHp;
     this.speed = def.baseStats.speed * (1 + (m - 1) * 0.5) * speedMult;
-    this.defense = Math.floor(def.baseStats.defense * Math.sqrt(m) * defenseMult);
+    const rawDefense = Math.floor(def.baseStats.defense * Math.sqrt(m) * defenseMult);
+    const isBoss = config.type.startsWith('boss_');
+    const defenseCap = isBoss ? 30 : 40;
+    this.defense = Math.min(rawDefense, defenseCap);
     this.attackDamage = Math.floor(def.baseStats.attackDamage * m * attackMult);
     this.attackSpeed = def.baseStats.attackSpeed;
     this.attackRange = def.baseStats.attackRange;
@@ -197,6 +206,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.flyerOrbitAngle = Math.random() * Math.PI * 2;
     }
 
+    // Initialize tank lunge timer to a random value
+    if (this.enemyType === 'tank') {
+      this.tankLungeTimer = 1500 + Math.random() * 1500;
+    }
+
     this.drawHpBar();
   }
 
@@ -226,6 +240,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         break;
       case 'exploder':
         this.updateExploder(delta, targetX, targetY, distToTarget);
+        break;
+      case 'runner':
+        this.updateRunner(delta, targetX, targetY, distToTarget);
+        break;
+      case 'tank':
+        this.updateTank(delta, targetX, targetY, distToTarget);
         break;
       case 'boss_goblin_king':
         this.updateBossGoblinKing(delta, targetX, targetY, distToTarget);
@@ -302,6 +322,67 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (dist <= this.EXPLODE_RANGE) {
       this.explode(targetX, targetY);
     }
+  }
+
+  private updateRunner(_delta: number, targetX: number, targetY: number, dist: number) {
+    // Runners flank: approach at an angle offset, not straight at player
+    const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, targetX, targetY);
+    // Pick a consistent offset direction based on spawn position (so they don't all go the same way)
+    const offsetSign = (Math.floor(this.x + this.y) % 2 === 0) ? 1 : -1;
+
+    if (dist > 80) {
+      // Approach at 30° offset (flanking)
+      const flankAngle = baseAngle + offsetSign * (Math.PI / 6);
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      const speedOscillation = 1 + 0.2 * Math.sin(Date.now() / 400); // existing runner speed wobble
+      body.setVelocity(
+        Math.cos(flankAngle) * this.speed * speedOscillation,
+        Math.sin(flankAngle) * this.speed * speedOscillation
+      );
+    } else {
+      // Close range: direct chase for the kill
+      this.chase(targetX, targetY, 1.2);
+    }
+  }
+
+  private updateTank(delta: number, targetX: number, targetY: number, dist: number) {
+    if (this.tankPausing) {
+      this.tankPauseTimer -= delta;
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setVelocity(0, 0);
+      if (this.tankPauseTimer <= 0) {
+        this.tankPausing = false;
+        this.tankLunging = true;
+        this.tankLungeTimer = 400; // 400ms lunge
+      }
+      return;
+    }
+
+    if (this.tankLunging) {
+      this.tankLungeTimer -= delta;
+      this.chase(targetX, targetY, 1.8); // fast lunge
+      if (this.tankLungeTimer <= 0) {
+        this.tankLunging = false;
+        this.tankLungeTimer = 2500 + Math.random() * 1000; // 2.5-3.5s between lunges
+      }
+      return;
+    }
+
+    // Normal chase
+    this.tankLungeTimer -= delta;
+    if (this.tankLungeTimer <= 0 && dist < 200) {
+      // Start pause before lunge
+      this.tankPausing = true;
+      this.tankPauseTimer = 200;
+      // Flash to telegraph
+      this.setTint(0xff6600);
+      this.scene.time.delayedCall(200, () => {
+        if (this.active) this.clearTint();
+      });
+      return;
+    }
+
+    this.chase(targetX, targetY, 1.0);
   }
 
   // King Goblin state
@@ -1005,7 +1086,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   // ══════════════════════════════════════════════════════════════════════════
 
   private chase(targetX: number, targetY: number, speedMult: number = 1) {
-    const body = this.body as Phaser.Physics.Arcade.Body;
     const angle = Phaser.Math.Angle.Between(this.x, this.y, targetX, targetY);
 
     let speedMod = speedMult * this.slowMultiplier;
@@ -1013,10 +1093,46 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       speedMod *= 1 + Math.sin(Date.now() / 200) * 0.2;
     }
 
-    body.setVelocity(
-      Math.cos(angle) * this.speed * speedMod,
-      Math.sin(angle) * this.speed * speedMod
-    );
+    let vx = Math.cos(angle) * this.speed * speedMod;
+    let vy = Math.sin(angle) * this.speed * speedMod;
+
+    // Separation: push away from nearby enemies to avoid stacking
+    // Performance: cap at 6 neighbors (early exit) to avoid O(n²) at scale
+    if (this.enemiesGroup) {
+      let sepX = 0;
+      let sepY = 0;
+      let neighborCount = 0;
+      const SEPARATION_RADIUS = 40;
+      const SEPARATION_FORCE = 0.4;
+      const MAX_NEIGHBORS = 6;
+
+      const children = this.enemiesGroup.getChildren();
+      for (let i = 0; i < children.length; i++) {
+        if (neighborCount >= MAX_NEIGHBORS) break;
+        const other = children[i] as Enemy;
+        if (other === this || !other.active) continue;
+        const dx = this.x - other.x;
+        const dy = this.y - other.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq > 0 && distSq < SEPARATION_RADIUS * SEPARATION_RADIUS) {
+          const dist = Math.sqrt(distSq);
+          const force = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS;
+          sepX += (dx / dist) * force;
+          sepY += (dy / dist) * force;
+          neighborCount++;
+        }
+      }
+
+      if (neighborCount > 0) {
+        sepX /= neighborCount;
+        sepY /= neighborCount;
+        vx += sepX * this.speed * SEPARATION_FORCE;
+        vy += sepY * this.speed * SEPARATION_FORCE;
+      }
+    }
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setVelocity(vx, vy);
 
     this.setRotation(angle + Math.PI / 2);
   }
@@ -1210,11 +1326,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     projectileY?: number,
     playerX?: number,
     playerY?: number,
-  ): boolean {
-    if (!this.active || this.hp <= 0) return false;
+  ): number {
+    if (!this.active || this.hp <= 0) return 0;
 
     // Lich invulnerability during shield phase
-    if (this.isInvulnerable()) return false;
+    if (this.isInvulnerable()) return 0;
 
     let finalAmount = amount;
 
@@ -1251,10 +1367,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.hp <= 0) {
       this.die();
-      return true;
+      return actual;
     }
 
-    return true;
+    return actual;
   }
 
   // ══════════════════════════════════════════════════════════════════════════

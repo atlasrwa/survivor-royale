@@ -442,7 +442,7 @@ export function generateWaveConfig(waveNumber: number): WaveConfig {
   }
 
   const isBossWave = waveNumber % 10 === 0;
-  const baseMultiplier = 1 + (waveNumber - 1) * 0.15;
+  const baseMultiplier = 1 + Math.log2(waveNumber) * 1.5;
   const baseCount = Math.floor(waveNumber * 2.5);
 
   // Derive boss types from ENEMY_DEFINITIONS keys (any key starting with 'boss_')

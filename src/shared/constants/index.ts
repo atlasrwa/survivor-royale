@@ -11,3 +11,4 @@ export * from './achievements';
 export * from './dailyChallenge';
 export * from './cosmetics';
 export * from './milestones';
+export * from './damageTypes';

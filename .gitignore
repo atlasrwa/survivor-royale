@@ -138,3 +138,4 @@ Thumbs.db
 scratch/
 TODO.local.md
 notes.txt
+*.tsbuildinfo
