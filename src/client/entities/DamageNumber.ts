@@ -6,6 +6,7 @@ export interface DamageNumberConfig {
   damage: number;
   isCrit?: boolean;    // ability hits, big hits
   isHeal?: boolean;    // lifesteal healing
+  isSuper?: boolean;   // super-effective elemental hit (gold/orange)
 }
 
 // Performance: limit active damage numbers on screen
@@ -20,7 +21,7 @@ export class DamageNumber {
   private text: Phaser.GameObjects.Text | null = null;
 
   constructor(scene: Phaser.Scene, config: DamageNumberConfig) {
-    const { x, y, damage, isCrit, isHeal } = config;
+    const { x, y, damage, isCrit, isHeal, isSuper } = config;
 
     // Performance: skip non-crit small damage numbers when at capacity
     if (activeDamageNumbers >= MAX_DAMAGE_NUMBERS && !isCrit && !isHeal) {
@@ -36,6 +37,9 @@ export class DamageNumber {
     } else if (isCrit) {
       color = '#ffcc00';
       fontSize = '22px';
+    } else if (isSuper) {
+      color = '#ffaa00'; // orange/gold for super-effective
+      fontSize = '20px';
     } else if (damage >= 100) {
       color = '#ff4444';
       fontSize = '20px';

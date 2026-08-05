@@ -4,6 +4,7 @@ import { Enemy } from '@/client/entities/Enemy';
 import { Player } from '@/client/entities/Player';
 import { DamageNumber } from './DamageNumber';
 import { playSound } from '@/client/utils/SoundManager';
+import { getDamageTypeMultiplier, ENEMY_WEAKNESSES, DamageType as ElementalDamageType } from '@/shared/constants/damageTypes';
 
 /**
  * WeaponSystem - handles auto-targeting and firing projectiles for the player.
@@ -14,6 +15,10 @@ export class WeaponSystem {
   private player: Player;
   private projectiles!: Phaser.Physics.Arcade.Group;
   private attackCooldown: number = 0;
+
+  // Homing projectile cooldown (Storm Barrage evolution)
+  private homingCooldown: number = 0;
+  private readonly HOMING_COOLDOWN_MS = 2000;
 
   // Tab-targeting: override target
   private tabTarget: Enemy | null = null;
@@ -39,6 +44,19 @@ export class WeaponSystem {
 
   getProjectilesGroup(): Phaser.Physics.Arcade.Group {
     return this.projectiles;
+  }
+
+  /**
+   * Determine the player's current elemental damage type based on hero and active effects.
+   */
+  private getPlayerDamageType(): ElementalDamageType {
+    // Mage default: fire (fireballs)
+    if (this.player.heroId === 'mage') return 'fire';
+    // Active effect overrides
+    if (this.player.burnDot) return 'fire';
+    if (this.player.slowOnHit) return 'ice';
+    if (this.player.getUpgradeStacks('chain_shot') > 0) return 'lightning';
+    return 'physical';
   }
 
   /**
@@ -91,6 +109,15 @@ export class WeaponSystem {
   }
 
   update(delta: number, enemiesGroup: Phaser.Physics.Arcade.Group) {
+    // Evolution effect: Homing Projectiles (Storm Barrage)
+    if (this.player.homingProjectileCount > 0) {
+      this.homingCooldown -= delta;
+      if (this.homingCooldown <= 0) {
+        this.homingCooldown = this.HOMING_COOLDOWN_MS;
+        this.fireHomingProjectiles(enemiesGroup);
+      }
+    }
+
     if (this.attackCooldown > 0) {
       this.attackCooldown -= delta;
       return;
@@ -225,17 +252,24 @@ export class WeaponSystem {
         damage = Math.floor(damage * (1.5 + this.player.critDamageBonus));
       }
 
+      // Elemental damage type multiplier
+      const playerDamageType = this.getPlayerDamageType();
+      const typeMultiplier = getDamageTypeMultiplier(playerDamageType, ENEMY_WEAKNESSES[enemy.enemyType] ?? null);
+      damage = Math.floor(damage * typeMultiplier);
+
       const kbAngle = Phaser.Math.Angle.Between(this.player.x, this.player.y, enemy.x, enemy.y);
-      enemy.takeDamage(damage, kbAngle, baseKnockback);
+      const actualDamage = enemy.takeDamage(damage, kbAngle, baseKnockback);
 
       // Damage number
-      const actualDamage = Math.max(1, damage - (enemy.defense ?? 0));
-      new DamageNumber(this.scene, {
-        x: enemy.x,
-        y: enemy.y,
-        damage: actualDamage,
-        isCrit,
-      });
+      if (actualDamage > 0) {
+        new DamageNumber(this.scene, {
+          x: enemy.x,
+          y: enemy.y,
+          damage: actualDamage,
+          isCrit,
+          isSuper: typeMultiplier > 1,
+        });
+      }
 
       // Skill tree: slow on hit
       if (this.player.slowOnHit && enemy.active) {
@@ -441,18 +475,22 @@ export class WeaponSystem {
       damage = Math.floor(damage * (1.5 + this.player.critDamageBonus));
     }
 
-    enemy.takeDamage(damage, angle, projectile.knockbackForce);
-    const killed = enemy.hp <= 0;
+    // Elemental damage type multiplier
+    const playerDamageType = this.getPlayerDamageType();
+    const typeMultiplier = getDamageTypeMultiplier(playerDamageType, ENEMY_WEAKNESSES[enemy.enemyType] ?? null);
+    damage = Math.floor(damage * typeMultiplier);
+
+    const actualDamage = enemy.takeDamage(damage, angle, projectile.knockbackForce);
     projectile.onHitEnemy();
 
     // Floating damage number
-    if (enemy.active || killed) {
-      const actualDamage = Math.max(1, damage - (enemy.defense ?? 0));
+    if (actualDamage > 0) {
       new DamageNumber(this.scene, {
         x: enemy.x,
         y: enemy.y,
         damage: actualDamage,
         isCrit,
+        isSuper: typeMultiplier > 1,
       });
     }
 
@@ -576,5 +614,38 @@ export class WeaponSystem {
         new DamageNumber(this.scene, { x: e.x, y: e.y, damage: splashDmg, isCrit: false });
       }
     });
+  }
+
+  /**
+   * Storm Barrage evolution: fire homing projectiles that seek enemies.
+   * Spawns projectiles in a ring around the player, each seeking the nearest enemy.
+   */
+  private fireHomingProjectiles(enemiesGroup: Phaser.Physics.Arcade.Group) {
+    const count = this.player.homingProjectileCount;
+    const damage = Math.floor(this.player.attackDamage * 0.5);
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const spawnX = this.player.x + Math.cos(angle) * 30;
+      const spawnY = this.player.y + Math.sin(angle) * 30;
+
+      const proj = new Projectile(this.scene, {
+        x: spawnX,
+        y: spawnY,
+        angle: angle,
+        speed: 250,
+        damage: damage,
+        lifetime: 3000,
+        textureKey: 'projectile_fireball',
+        piercing: 999,
+        knockbackForce: 50,
+        scale: 0.8,
+      });
+      proj.setTint(0x44ccff);
+      proj.homing = true;
+      proj.homingEnemiesGroup = enemiesGroup;
+
+      this.projectiles.add(proj);
+    }
   }
 }

@@ -109,6 +109,7 @@ export class GameScene extends Phaser.Scene {
   private isGameOver: boolean = false;
   private isPaused: boolean = false;
   private isLevelUpOpen: boolean = false;
+  private _inDeathExplosion: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -382,9 +383,9 @@ export class GameScene extends Phaser.Scene {
         if (!arrow.active || !enemy.active) return;
         const damage = (arrow as any).damage ?? this.player.attackDamage;
         const angle = Phaser.Math.Angle.Between(arrow.x, arrow.y, enemy.x, enemy.y);
-        enemy.takeDamage(damage, angle, 150);
-        if (enemy.active) {
-          new DamageNumber(this, { x: enemy.x, y: enemy.y, damage: damage, isCrit: true });
+        const actualDamage = enemy.takeDamage(damage, angle, 150);
+        if (actualDamage > 0) {
+          new DamageNumber(this, { x: enemy.x, y: enemy.y, damage: actualDamage, isCrit: true });
         }
         arrow.destroy();
         this.hitStop.trigger(50); // 3 frames for ability hits
@@ -1016,6 +1017,36 @@ export class GameScene extends Phaser.Scene {
     const bonusScore = Math.floor(enemy.scoreReward * multiplier);
     store.addScore(bonusScore);
     store.addKill();
+
+    // Evolution effect: Combo Lifesteal (Soul Reaper)
+    // Heal based on combo count: 0.5 HP per combo stack
+    if (this.player.comboLifesteal) {
+      const healAmount = Math.floor(this.comboCount * 0.5);
+      if (healAmount > 0) {
+        this.player.heal(healAmount);
+      }
+    }
+
+    // Evolution effect: Death Explosion (Soul Reaper)
+    // Killed enemies deal AoE damage to nearby enemies within 80px
+    // Guard against chain reactions: only primary kills trigger explosions
+    if (this.player.deathExplosionDamage > 0 && !this._inDeathExplosion) {
+      this._inDeathExplosion = true;
+      const explosionRadius = 80;
+      const enemies = this.waveSystem.getEnemiesGroup();
+      enemies.getChildren().forEach((obj) => {
+        const nearbyEnemy = obj as Enemy;
+        if (!nearbyEnemy.active || nearbyEnemy.hp <= 0 || nearbyEnemy === enemy) return;
+        const dist = Phaser.Math.Distance.Between(enemy.x, enemy.y, nearbyEnemy.x, nearbyEnemy.y);
+        if (dist <= explosionRadius) {
+          const kbAngle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearbyEnemy.x, nearbyEnemy.y);
+          nearbyEnemy.takeDamage(this.player.deathExplosionDamage, kbAngle, 100);
+        }
+      });
+      // Visual: red/orange explosion at the dead enemy's position
+      ParticleSystem.getInstance().deathExplosion(enemy.x, enemy.y, 0xff6622, 1.5);
+      this._inDeathExplosion = false;
+    }
 
     // Time-scale effects for combos
     if (this.comboCount >= 10) {
