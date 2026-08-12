@@ -55,6 +55,8 @@
     "build",
     ".next",
     "llama.cpp",
+    "RWA-Atlas-Claude",
+    "rwa-atlas-audit",
     "hardhat.config.ts",
     "scripts/**/*.ts",
     "tests/**/*.ts",
